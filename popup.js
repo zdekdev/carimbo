@@ -4,14 +4,12 @@
 
     let listening = false;
     let saveTimeout = null;
-    let indicatorTimeout = null;
 
     // DOM refs
     const signatureInput = document.getElementById('signature');
     const shortcutBtn = document.getElementById('shortcut-btn');
     const shortcutReset = document.getElementById('shortcut-reset');
     const previewEl = document.getElementById('preview');
-    const saveIndicator = document.getElementById('save-indicator');
     const fmtButtons = document.querySelectorAll('.fmt-btn[data-fmt]');
     const breakCountInput = document.getElementById('break-count');
 
@@ -101,14 +99,6 @@
     // ====================
     // Auto-save
     // ====================
-    function showSaved() {
-        saveIndicator.classList.add('visible');
-        if (indicatorTimeout) clearTimeout(indicatorTimeout);
-        indicatorTimeout = setTimeout(function() {
-            saveIndicator.classList.remove('visible');
-        }, 2000);
-    }
-
     function autoSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(async function() {
@@ -132,7 +122,6 @@
                     breakCount: breakCount
                 });
                 console.log('[Popup] Salvo!');
-                showSaved();
             } catch (error) {
                 console.error('[Popup] Erro ao salvar:', error);
             }
