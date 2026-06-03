@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuracoes - Assinatura WhatsApp</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 380px;
+            min-height: 460px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f9fafb;
+            color: #111827;
+        }
+        .container { padding: 24px; }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .header-icon {
+            width: 40px; height: 40px;
+            background: #22c55e;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-icon svg { width: 24px; height: 24px; color: #fff; }
+        .header h1 { font-size: 16px; font-weight: 700; }
+        .header p { font-size: 11px; color: #6b7280; }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #15803d;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #374151;
+        }
+
+        /* Formatting toolbar */
+        .fmt-toolbar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+        .fmt-btn {
+            width: 34px; height: 34px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            transition: all 0.15s;
+        }
+        .fmt-btn:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        .fmt-btn:active { background: #d1d5db; }
+        .fmt-btn.bold { font-weight: 800; }
+        .fmt-btn.italic { font-style: italic; font-family: Georgia, serif; }
+        .fmt-btn.mono {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* Break count control */
+        .fmt-break-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .fmt-break-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+        .fmt-break-input {
+            width: 38px;
+            height: 34px;
+            text-align: center;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            background: #fff;
+            -moz-appearance: textfield;
+        }
+        .fmt-break-input::-webkit-inner-spin-button,
+        .fmt-break-input::-webkit-outer-spin-button {
+            opacity: 1;
+            height: 30px;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 72px;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+        .form-hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+        .shortcut-row { display: flex; gap: 8px; }
+        .shortcut-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #fff;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .shortcut-btn:hover { background: #f3f4f6; }
+        .shortcut-btn.listening {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+        }
+        .shortcut-reset {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: all 0.2s;
+        }
+        .shortcut-reset:hover { color: #6b7280; background: #f3f4f6; }
+        .shortcut-reset svg { display: block; }
+
+        /* Preview */
+        .preview-box {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .preview-box label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #9ca3af;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .preview-content {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+            color: #374151;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 32px;
+            line-height: 1.5;
+        }
+        .preview-content b { font-weight: 700; }
+        .preview-content i { font-style: italic; }
+        .preview-content s { text-decoration: line-through; color: #6b7280; }
+        .preview-content code {
+            font-family: 'Courier New', monospace;
+            background: #f3f4f6;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .save-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #15803d;
+        }
+        .save-indicator.visible { display: flex; }
+        .save-indicator .check-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
+        .footer {
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1>Assinatura Auto</h1>
+                <p>WhatsApp Web</p>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Extensao ativa</span>
+        </div>
+
+        <!-- Form -->
+        <form id="config-form">
+            <!-- Signature Input -->
+            <div class="form-group">
+                <label for="signature">Sua Assinatura</label>
+                <!-- Formatting toolbar -->
+                <div class="fmt-toolbar">
+                    <button type="button" class="fmt-btn bold" data-fmt="bold" title="Negrito (*texto*)">B</button>
+                    <button type="button" class="fmt-btn italic" data-fmt="italic" title="Italico (_texto_)">I</button>
+                    <button type="button" class="fmt-btn" data-fmt="strikethrough" title="Riscado (~texto~)">S</button>
+                    <button type="button" class="fmt-btn mono" data-fmt="mono" title="Monospace (`texto`)">&lt;/&gt;</button>
+                    <div class="fmt-break-group">
+                        <label class="fmt-break-label" title="Quebras de linha apos a assinatura">↵</label>
+                        <input type="number" id="break-count" class="fmt-break-input" value="2" min="0" max="10" title="Quantidade de quebras de linha">
+                    </div>
+                </div>
+                <textarea
+                    id="signature"
+                    placeholder="Ex: *[ Seu Nome ]*&#10;_Cargo_&#10;~tel: 1199999-9999~"
+                    rows="3"
+                ></textarea>
+                <p class="form-hint">Use os botoes de formatacao ou digite os marcadores manualmente</p>
+            </div>
+
+            <!-- Preview -->
+            <div class="preview-box form-group">
+                <label>Pre-visualizacao (como aparece no WhatsApp)</label>
+                <div id="preview" class="preview-content"></div>
+            </div>
+
+            <!-- Shortcut Key -->
+            <div class="form-group">
+                <label>Tecla de Atalho</label>
+                <div class="shortcut-row">
+                    <button
+                        type="button"
+                        id="shortcut-btn"
+                        class="shortcut-btn"
+                    >Tab</button>
+                    <button
+                        type="button"
+                        id="shortcut-reset"
+                        class="shortcut-reset"
+                        title="Restaurar padrao (Tab)"
+                    >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="form-hint">Tecla padrao: Tab</p>
+            </div>
+
+            <!-- Auto-save indicator -->
+            <div id="save-indicator" class="save-indicator">
+                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Salvo automaticamente</span>
+            </div>
+        </form>
+
+        <!-- Footer -->
+        <div class="footer">
+            Abra o WhatsApp Web e use a tecla de atalho configurada
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
