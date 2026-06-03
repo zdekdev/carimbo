@@ -57,9 +57,14 @@
     }
 
     function campoPossuiTexto(elemento) {
-        // Verifica se há texto visível (ignora espaços em branco e quebras de linha)
+        // Verifica se ha texto visivel (ignora espacos em branco e quebras de linha)
         const texto = elemento.textContent || '';
         return texto.trim().length > 0;
+    }
+
+    function assinaturaJaExiste(elemento) {
+        const texto = elemento.textContent || '';
+        return texto.includes(MINHA_ASSINATURA);
     }
 
     function simularShiftEnter(elemento) {
@@ -92,6 +97,11 @@
 
         evento.preventDefault();
         evento.stopImmediatePropagation();
+
+        // Se a assinatura ja estiver no campo, nao insere novamente
+        if (assinaturaJaExiste(campo)) {
+            return;
+        }
 
         campo.focus();
 
