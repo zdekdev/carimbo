@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuracoes - Assinatura WhatsApp</title>
+    <title>Configuracoes - Carimbo</title>
     <style>
         * {
             margin: 0;
@@ -319,7 +319,7 @@
         }
 
         .chat-bubble-content:empty::after {
-            content: 'Sua assinatura aparecera aqui';
+            content: 'Seu texto aparecera aqui';
             color: #8696a0;
             font-style: italic;
         }
@@ -373,8 +373,10 @@
             content: '';
             width: 24px;
             height: 24px;
-            background: #00a884;
-            border-radius: 50%;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2L11 13'/%3E%3Cpath d='M22 2l-7 20-4-9-9-4 20-7z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             flex-shrink: 0;
             margin-left: 8px;
             opacity: 0.5;
@@ -416,7 +418,7 @@
                 </svg>
             </div>
             <div>
-                <h1>Assinatura Auto</h1>
+                <h1>Carimbo</h1>
                 <p>WhatsApp Web</p>
             </div>
         </div>
@@ -427,7 +429,7 @@
             <div class="form-group">
                 <div class="fmt-break-label-container">
                     <label for="signature">Botoes de Formatacao</label>
-                    <label class="fmt-break-label" title="Quebras de linha apos a assinatura">Quebras de linha</label>
+                    <label class="fmt-break-label" title="Quebras de linha apos o texto">Quebras de linha</label>
                 </div>
 
                 <!-- Formatting toolbar -->
@@ -455,7 +457,7 @@
                     </div>
                 </div>
                 <input type="text" id="signature" maxlength="40"
-                    placeholder="Digite sua assinatura (max. 40 caracteres)" autocomplete="off">
+                    placeholder="Digite seu texto (max. 40 caracteres)" autocomplete="off">
                 <input type="hidden" id="signature-md">
                 <p class="form-hint"><span id="char-count">0</span>/40 caracteres</p>
 
@@ -463,9 +465,9 @@
                 <div class="auto-sign-row">
                     <label class="auto-sign-label" for="auto-sign">
                         <input type="checkbox" id="auto-sign">
-                        <span>Assinatura automatica</span>
+                        <span>Texto automatico</span>
                     </label>
-                    <p class="form-hint">Insere a assinatura automaticamente ao abrir um chat. O atalho de teclado sera
+                    <p class="form-hint">Insere o texto automaticamente ao abrir um chat. O atalho de teclado sera
                         desativado.</p>
                 </div>
             </div>
@@ -507,7 +509,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            Abra o WhatsApp Web e use a tecla de atalho configurada
+            Abra o WhatsApp Web e use a tecla de atalho configurada para carimbar sua mensagem
         </div>
     </div>
 

@@ -13,7 +13,7 @@
         showTime: false
     };
 
-    // Rastreia elementos onde a assinatura ja foi inserida automaticamente
+    // Rastreia elementos onde o carimbo ja foi inserido automaticamente
     var _camposProcessados = new WeakSet();
 
     // Selector do campo de chat do WhatsApp
@@ -41,23 +41,23 @@
         if (data.showTime !== undefined) {
             _config.showTime = data.showTime;
         }
-        console.log('[WhatsApp Signature - Page] Config aplicada:', JSON.stringify(_config));
+        console.log('[Carimbo] Config aplicada:', JSON.stringify(_config));
 
-        // Se autoSign foi ativado, tenta inserir em campos ja visiveis (nao processados)
+        // Se autoSign foi ativado, tenta carimbar em campos ja visiveis (nao processados)
         if (changed && _config.autoSign && _config.signature) {
-            tentarAutoInserirCamposExistentes();
+            tentarAutoCarimbarCamposExistentes();
         }
     }
 
     // Recebe config atualizada do content script via postMessage
     window.addEventListener('message', function(event) {
-        if (!event.data || event.data.type !== 'WHATSAPP_SIGNATURE_CONFIG') return;
+        if (!event.data || event.data.type !== 'CARIMBO_CONFIG') return;
         aplicarConfig(event.data);
     });
 
     // Pede a config assim que carrega (resolve o problema de timing)
-    window.postMessage({ type: 'WHATSAPP_SIGNATURE_READY' }, '*');
-    console.log('[WhatsApp Signature - Page] Aguardando config do content script...');
+    window.postMessage({ type: 'CARIMBO_READY' }, '*');
+    console.log('[Carimbo] Aguardando config do content script...');
 
     // ====================
     // Helper functions
@@ -104,13 +104,13 @@
         return texto.trim().length > 0;
     }
 
-    function assinaturaJaExiste(elemento) {
+    function carimboJaExiste(elemento) {
         if (!_config.signature) return false;
         var texto = elemento.textContent || '';
         return texto.includes(_config.signature);
     }
 
-    function assinaturaTemConteudo() {
+    function carimboTemConteudo() {
         if (!_config.signature) return false;
         var plain = _config.signature
             .replace(/\*([^*\n]+?)\*/g, '$1')
@@ -136,11 +136,37 @@
         elemento.dispatchEvent(new KeyboardEvent('keyup', eventoConfig));
     }
 
-    function inserirAssinatura(campo) {
+    function reWrapWithMarkers(plainText, originalMd) {
+        var result = plainText;
+        var markers = extractOuterMarkers(originalMd);
+        // Re-aplica na ordem inversa (ultimos extraidos = mais internos)
+        for (var i = markers.length - 1; i >= 0; i--) {
+            result = markers[i] + result + markers[i];
+        }
+        return result;
+    }
+
+    function extractOuterMarkers(text) {
+        var markers = [];
+        var remaining = text;
+        var fmtOrder = ['bold', 'italic', 'strikethrough', 'mono'];
+        var markerMap = { bold: '*', italic: '_', strikethrough: '~', mono: '`' };
+
+        for (var i = 0; i < fmtOrder.length; i++) {
+            var marker = markerMap[fmtOrder[i]];
+            if (remaining.startsWith(marker) && remaining.endsWith(marker) && remaining.length >= marker.length * 2 + 1) {
+                markers.push(marker);
+                remaining = remaining.slice(marker.length, -marker.length);
+            }
+        }
+        return markers;
+    }
+
+    function inserirCarimbo(campo) {
         campo.focus();
 
-        // Monta texto da assinatura com data/hora se ativados
-        var textoAssinatura = _config.signature;
+        // Monta texto do carimbo com data/hora se ativados
+        var textoCarimbo = _config.signature;
         var dtParts = [];
         if (_config.showDate) {
             var now = new Date();
@@ -155,16 +181,24 @@
             var minutes = String(now2.getMinutes()).padStart(2, '0');
             dtParts.push(hours + ':' + minutes);
         }
-        if (dtParts.length > 0) {
-            textoAssinatura = textoAssinatura + ' ' + dtParts.join(' ');
+        if (dtParts.length > 0 && textoCarimbo) {
+            // Extrai texto puro, anexa data/hora, re-aplica os mesmos marcadores
+            var plain = textoCarimbo
+                .replace(/\*([^*\n]+?)\*/g, '$1')
+                .replace(/_([^_\n]+?)_/g, '$1')
+                .replace(/~([^~\n]+?)~/g, '$1')
+                .replace(/`([^`\n]+?)`/g, '$1')
+                .trim();
+            var dtSuffix = ' ' + dtParts.join(' ');
+            textoCarimbo = reWrapWithMarkers(plain + dtSuffix, textoCarimbo.trim());
         }
 
         if (campoPossuiTexto(campo)) {
             posicionarCursor(campo, true);
-            document.execCommand('insertText', false, textoAssinatura);
+            document.execCommand('insertText', false, textoCarimbo);
         } else {
             posicionarCursor(campo, false);
-            document.execCommand('insertText', false, textoAssinatura);
+            document.execCommand('insertText', false, textoCarimbo);
         }
 
         var quebras = _config.breakCount || 2;
@@ -226,7 +260,7 @@
             return;
         }
 
-        if (!assinaturaTemConteudo()) {
+        if (!carimboTemConteudo()) {
             return;
         }
 
@@ -234,21 +268,21 @@
         evento.preventDefault();
         evento.stopImmediatePropagation();
 
-        if (assinaturaJaExiste(campo)) {
+        if (carimboJaExiste(campo)) {
             return;
         }
 
-        inserirAssinatura(campo);
+        inserirCarimbo(campo);
     }
 
     // ====================
-    // Auto-insert: insere assinatura automaticamente ao abrir chat
+    // Auto-insert: carimba automaticamente ao abrir chat
     // ====================
-    function tentarAutoInserir(campo) {
+    function tentarAutoCarimbar(campo) {
         if (!_config.autoSign) return;
-        if (!assinaturaTemConteudo()) return;
+        if (!carimboTemConteudo()) return;
         if (_camposProcessados.has(campo)) return;
-        if (assinaturaJaExiste(campo)) {
+        if (carimboJaExiste(campo)) {
             _camposProcessados.add(campo);
             return;
         }
@@ -256,13 +290,13 @@
         if (campoPossuiTexto(campo)) return;
 
         _camposProcessados.add(campo);
-        inserirAssinatura(campo);
+        inserirCarimbo(campo);
     }
 
-    function tentarAutoInserirCamposExistentes() {
+    function tentarAutoCarimbarCamposExistentes() {
         var campos = document.querySelectorAll(CAMPO_SELECTOR);
         for (var i = 0; i < campos.length; i++) {
-            tentarAutoInserir(campos[i]);
+            tentarAutoCarimbar(campos[i]);
         }
     }
 
@@ -277,7 +311,7 @@
                 timeout = null;
                 var campos = document.querySelectorAll(CAMPO_SELECTOR);
                 for (var i = 0; i < campos.length; i++) {
-                    tentarAutoInserir(campos[i]);
+                    tentarAutoCarimbar(campos[i]);
                 }
             });
         });
@@ -287,7 +321,7 @@
             subtree: true
         });
 
-        console.log('[WhatsApp Signature - Page] MutationObserver iniciado');
+        console.log('[Carimbo] MutationObserver iniciado');
     }
 
     // ====================
@@ -295,5 +329,5 @@
     // ====================
     window.addEventListener('keydown', interceptarAtalho, true);
     iniciarObserver();
-    console.log('[WhatsApp Signature - Page] Handler injetado e ativo');
+    console.log('[Carimbo] Handler injetado e ativo');
 })();

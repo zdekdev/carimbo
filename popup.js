@@ -1,4 +1,4 @@
-// Popup logic - WhatsApp Signature Extension (vanilla JS, auto-save)
+// Popup logic - Carimbo Extension (vanilla JS, auto-save)
 (function() {
     'use strict';
 
@@ -246,38 +246,36 @@
     function updatePreview() {
         var mdText = signatureMdInput.value;
 
-        // Constroi sufixo de data/hora para preview
-        var dtSuffix = '';
-        var dtSuffixRaw = '';
-        var parts = [];
+        // Constroi sufixo de data/hora
+        var dtParts = [];
         if (showDateInSignature) {
-            parts.push(getCurrentDate());
+            dtParts.push(getCurrentDate());
         }
         if (showTimeInSignature) {
-            parts.push(getCurrentTime());
+            dtParts.push(getCurrentTime());
         }
-        if (parts.length > 0) {
-            dtSuffix = ' ' + parts.join(' ');
-            dtSuffixRaw = ' ' + parts.join(' ');
-        }
+        var dtSuffix = dtParts.length > 0 ? ' ' + dtParts.join(' ') : '';
+
+        // Monta texto completo (plain + dt) e reconstroi markdown com formatacao
+        var plainContent = stripMarkdown(mdText).trim();
+        var fullPlain = (plainContent + dtSuffix).trim();
+        var fullMd = fullPlain ? buildMarkdown(fullPlain) : '';
 
         // Chat bubble preview (markdown renderizado)
-        var plainContent = stripMarkdown(mdText).trim();
         var breakCount = parseInt(breakCountInput.value) || 0;
         var breaks = '<br>'.repeat(breakCount);
         var simulatedMsg = '<div style="border: none;margin-bottom:6px;font-size:13px;color:#111b21;line-height:1.4;word-break:break-word;position:relative">Bom dia! Segue o relatório solicitado.</div>';
-        if (!plainContent) {
+        if (!fullMd) {
             previewChat.innerHTML = simulatedMsg;
         } else {
-            previewChat.innerHTML = renderWppMarkdown(mdText) + dtSuffix + breaks + simulatedMsg;
+            previewChat.innerHTML = renderWppMarkdown(fullMd) + breaks + simulatedMsg;
         }
 
         // Input field preview (texto cru com marcadores markdown visiveis)
-        var mdRaw = signatureMdInput.value;
-        if (!mdRaw.trim()) {
+        if (!fullMd.trim()) {
             previewInput.textContent = '';
         } else {
-            previewInput.textContent = mdRaw + dtSuffixRaw;
+            previewInput.textContent = fullMd;
         }
     }
 

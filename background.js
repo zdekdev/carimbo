@@ -1,4 +1,4 @@
-// Background service worker for WhatsApp Signature Extension
+// Background service worker for Carimbo Extension
 
 // Default configuration
 const defaultConfig = {
@@ -16,12 +16,12 @@ chrome.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
         chrome.storage.local.set(defaultConfig)
             .then(() => {
-                console.log('[WhatsApp Signature] Configuracao padrao aplicada:', defaultConfig);
+                console.log('[Carimbo] Configuracao padrao aplicada:', defaultConfig);
             })
             .catch(error => {
-                console.error('[WhatsApp Signature] Erro ao definir configuracao padrao:', error);
+                console.error('[Carimbo] Erro ao definir configuracao padrao:', error);
             });
     }
 });
 
-console.log('[WhatsApp Signature] Service worker iniciado');
+console.log('[Carimbo] Service worker iniciado');
