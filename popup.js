@@ -5,6 +5,10 @@
     let listening = false;
     let saveTimeout = null;
 
+    // Estado de formatacao: persiste independente do texto
+    // null = sem formatacao | { marker: '*', fmt: 'bold' } | etc.
+    let currentFormat = null;
+
     // DOM refs
     const signatureInput = document.getElementById('signature');       // visivel - texto puro
     const signatureMdInput = document.getElementById('signature-md');  // oculto - markdown
@@ -15,6 +19,46 @@
     const charCount = document.getElementById('char-count');
     const fmtButtons = document.querySelectorAll('.fmt-btn[data-fmt]');
     const breakCountInput = document.getElementById('break-count');
+
+    // Marcadores por tipo de formatacao
+    const formatDefs = {
+        bold:          { marker: '*', fmt: 'bold' },
+        italic:        { marker: '_', fmt: 'italic' },
+        strikethrough: { marker: '~', fmt: 'strikethrough' },
+        mono:          { marker: '`', fmt: 'mono' }
+    };
+
+    // ====================
+    // Detecta qual formatacao esta ativa no texto markdown
+    // ====================
+    function getFormatFromMd(text) {
+        if (!text) return null;
+        var trimmed = text.trim();
+
+        var fmtOrder = ['bold', 'italic', 'strikethrough', 'mono'];
+        for (var i = 0; i < fmtOrder.length; i++) {
+            var def = formatDefs[fmtOrder[i]];
+            var marker = def.marker;
+            // So considera formatado se: comeca E termina com o marker, e ha conteudo real entre eles
+            if (trimmed.startsWith(marker) && trimmed.endsWith(marker) && trimmed.length >= marker.length * 2 + 1) {
+                var inner = trimmed.slice(marker.length, -marker.length);
+                if (inner.trim().length > 0) {
+                    return def;
+                }
+            }
+        }
+        return null;
+    }
+
+    // ====================
+    // Reconstroi o texto markdown combinando format + texto puro
+    // ====================
+    function buildMarkdown(plainText) {
+        if (!plainText || !plainText.trim()) return '';
+        var fmt = currentFormat;
+        if (!fmt) return plainText.trim();
+        return fmt.marker + plainText.trim() + fmt.marker;
+    }
 
     // ====================
     // Remove marcadores markdown -> texto puro
@@ -33,7 +77,7 @@
     // ====================
     function renderWppMarkdown(text) {
         if (!text) return '';
-        let html = text
+        var html = text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
@@ -47,29 +91,12 @@
     }
 
     // ====================
-    // Detecta formatacao ativa no texto markdown (via regex)
+    // Atualiza estado dos botoes de formatacao
     // ====================
-    function detectFormat(text, fmt) {
-        if (!text) return false;
-
-        const markers = {
-            bold: /\*([^*\n]+?)\*/,
-            italic: /_([^_\n]+?)_/,
-            strikethrough: /~([^~\n]+?)~/,
-            mono: /`([^`\n]+?)`/
-        };
-
-        const regex = markers[fmt];
-        if (!regex) return false;
-
-        return regex.test(text);
-    }
-
     function updateFmtButtons() {
-        const text = signatureMdInput.value.trim();
         fmtButtons.forEach(function(btn) {
-            const fmt = btn.dataset.fmt;
-            const active = detectFormat(text, fmt);
+            var fmt = btn.dataset.fmt;
+            var active = currentFormat !== null && currentFormat.fmt === fmt;
             btn.classList.toggle('active', active);
         });
     }
@@ -78,17 +105,18 @@
     // Atualiza preview (chat bubble + input field)
     // ====================
     function updatePreview() {
-        const mdText = signatureMdInput.value;
+        var mdText = signatureMdInput.value;
 
         // Chat bubble preview (markdown renderizado)
-        if (!mdText.trim()) {
+        var plainContent = stripMarkdown(mdText).trim();
+        if (!plainContent) {
             previewChat.textContent = '';
         } else {
             previewChat.innerHTML = renderWppMarkdown(mdText);
         }
 
         // Input field preview (texto puro, sem marcadores)
-        const plain = signatureInput.value;
+        var plain = signatureInput.value;
         if (!plain.trim()) {
             previewInput.textContent = '';
         } else {
@@ -100,7 +128,7 @@
     // Contador de caracteres (baseado no texto visivel)
     // ====================
     function updateCharCount() {
-        const len = signatureInput.value.length;
+        var len = signatureInput.value.length;
         charCount.textContent = len;
         if (len >= 40) {
             charCount.style.color = '#ef4444';
@@ -112,45 +140,45 @@
     }
 
     // ====================
-    // Botoes de formatacao (toggle no texto OCULTO, atualiza visivel)
+    // Sincroniza o campo oculto a partir do visivel + currentFormat
+    // ====================
+    function syncMdFromVisible() {
+        var plain = signatureInput.value;
+        signatureMdInput.value = buildMarkdown(plain);
+    }
+
+    // ====================
+    // Input visivel: preserva formatacao, rebuilda markdown
+    // (BUG CORRIGIDO: limpar texto NAO remove formatacao)
+    // ====================
+    signatureInput.addEventListener('input', function() {
+        syncMdFromVisible();
+        updateFmtButtons();
+        updatePreview();
+        updateCharCount();
+        autoSave();
+    });
+
+    // ====================
+    // Botoes de formatacao (toggle no formato, atualiza ambos os campos)
     // ====================
     fmtButtons.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
-            const fmt = this.dataset.fmt;
-            const text = signatureMdInput.value;
-            let marker;
+            var fmt = this.dataset.fmt;
+            var def = formatDefs[fmt];
+            if (!def) return;
 
-            switch (fmt) {
-                case 'bold':
-                    marker = '*';
-                    break;
-                case 'italic':
-                    marker = '_';
-                    break;
-                case 'strikethrough':
-                    marker = '~';
-                    break;
-                case 'mono':
-                    marker = '`';
-                    break;
-                default:
-                    return;
-            }
-
-            const trimmed = text.trim();
-
-            // Verifica se o texto INTEIRO ja esta envolvido pelo marcador
-            const isWrapped = trimmed.startsWith(marker) && trimmed.endsWith(marker);
-
-            if (isWrapped) {
-                signatureMdInput.value = trimmed.slice(marker.length, -marker.length);
+            // Se ja esta com ESTA formatacao ativa -> remove
+            if (currentFormat && currentFormat.fmt === fmt) {
+                currentFormat = null;
             } else {
-                signatureMdInput.value = marker + trimmed + marker;
+                // Aplica nova formatacao (substitui qualquer anterior)
+                currentFormat = def;
             }
 
-            // Atualiza o input visivel removendo os marcadores
-            signatureInput.value = stripMarkdown(signatureMdInput.value);
+            // Reconstroi o campo oculto com a nova formatacao
+            syncMdFromVisible();
 
             signatureInput.focus();
             updateFmtButtons();
@@ -161,85 +189,89 @@
     });
 
     // ====================
-    // Auto-save
+    // Auto-save (salva signature-md + formato)
     // ====================
     function autoSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(async function() {
-            let shortcutParaSalvar = shortcutBtn.textContent;
+        saveTimeout = setTimeout(function() {
+            var shortcutParaSalvar = shortcutBtn.textContent;
             if (shortcutParaSalvar === 'Space') {
                 shortcutParaSalvar = ' ';
             }
 
-            const breakCount = parseInt(breakCountInput.value, 10) || 2;
+            var breakCount = parseInt(breakCountInput.value, 10) || 2;
+            var formatToSave = currentFormat ? currentFormat.fmt : null;
+
+            // So salva signature-md se houver conteudo real (sem marcadores)
+            var plainContent = stripMarkdown(signatureMdInput.value).trim();
+            var sigToSave = plainContent ? signatureMdInput.value : '';
 
             console.log('[Popup] Auto-salvando:', {
-                signature: signatureMdInput.value,
+                signature: sigToSave,
+                signatureFormat: formatToSave,
                 shortcut: shortcutParaSalvar,
                 breakCount: breakCount
             });
 
-            try {
-                await chrome.storage.local.set({
-                    signature: signatureMdInput.value,
-                    shortcut: shortcutParaSalvar,
-                    breakCount: breakCount
-                });
+            chrome.storage.local.set({
+                signature: sigToSave,
+                signatureFormat: formatToSave,
+                shortcut: shortcutParaSalvar,
+                breakCount: breakCount
+            }).then(function() {
                 console.log('[Popup] Salvo!');
-            } catch (error) {
+            }).catch(function(error) {
                 console.error('[Popup] Erro ao salvar:', error);
-            }
+            });
         }, 500);
     }
 
     // ====================
-    // Input visivel: sincroniza com oculto, atualiza preview + char count + auto-save
-    // ====================
-    signatureInput.addEventListener('input', function() {
-        // Sincroniza o oculto com o texto visivel (markdown e perdido ao digitar manualmente)
-        signatureMdInput.value = signatureInput.value;
-        updateFmtButtons();
-        updatePreview();
-        updateCharCount();
-        autoSave();
-    });
-
-    // Break count change -> auto-save
-    breakCountInput.addEventListener('input', function() {
-        autoSave();
-    });
-    breakCountInput.addEventListener('change', function() {
-        autoSave();
-    });
-
-    // ====================
     // Load config
     // ====================
-    async function loadConfig() {
-        try {
-            console.log('[Popup] Carregando config do storage...');
-            const result = await chrome.storage.local.get(['signature', 'shortcut', 'breakCount']);
+    function loadConfig() {
+        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount']).then(function(result) {
             console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
-                // O storage contem markdown -> vai para o campo oculto
                 signatureMdInput.value = result.signature;
-                // Campo visivel mostra apenas texto puro
                 signatureInput.value = stripMarkdown(result.signature);
             }
+
+            // Restaura o formato salvo
+            if (result.signatureFormat && formatDefs[result.signatureFormat]) {
+                currentFormat = formatDefs[result.signatureFormat];
+            } else if (result.signature) {
+                // Fallback: detecta formato a partir do markdown salvo
+                currentFormat = getFormatFromMd(result.signature);
+            } else {
+                currentFormat = null;
+            }
+
             if (result.shortcut) {
                 shortcutBtn.textContent = result.shortcut === ' ' ? 'Space' : result.shortcut;
             }
             if (result.breakCount !== undefined && result.breakCount !== null) {
                 breakCountInput.value = result.breakCount;
             }
+
             updateFmtButtons();
             updatePreview();
             updateCharCount();
-        } catch (error) {
+        }).catch(function(error) {
             console.error('[Popup] Erro ao carregar config:', error);
-        }
+        });
     }
+
+    // ====================
+    // Break count change -> auto-save
+    // ====================
+    breakCountInput.addEventListener('input', function() {
+        autoSave();
+    });
+    breakCountInput.addEventListener('change', function() {
+        autoSave();
+    });
 
     // ====================
     // Shortcut key capture
@@ -255,8 +287,8 @@
             e.preventDefault();
             e.stopPropagation();
 
-            const key = e.key;
-            const displayKey = key === ' ' ? 'Space' : key;
+            var key = e.key;
+            var displayKey = key === ' ' ? 'Space' : key;
             console.log('[Popup] Tecla capturada:', key, '(exibindo como:', displayKey + ')');
 
             shortcutBtn.textContent = displayKey;

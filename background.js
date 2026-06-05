@@ -3,7 +3,9 @@
 // Default configuration
 const defaultConfig = {
     signature: '',
-    shortcut: 'Tab'
+    signatureFormat: null,
+    shortcut: 'Tab',
+    breakCount: 2
 };
 
 // Initialize extension - set default config on first install

@@ -77,8 +77,20 @@
 
     function assinaturaJaExiste(elemento) {
         if (!_config.signature) return false;
-        const texto = elemento.textContent || '';
+        var texto = elemento.textContent || '';
         return texto.includes(_config.signature);
+    }
+
+    function assinaturaTemConteudo() {
+        if (!_config.signature) return false;
+        // Remove marcadores markdown e verifica se existe texto real
+        var plain = _config.signature
+            .replace(/\*([^*\n]+?)\*/g, '$1')
+            .replace(/_([^_\n]+?)_/g, '$1')
+            .replace(/~([^~\n]+?)~/g, '$1')
+            .replace(/`([^`\n]+?)`/g, '$1')
+            .trim();
+        return plain.length > 0;
     }
 
     function simularShiftEnter(elemento) {
@@ -107,7 +119,7 @@
             return;
         }
 
-        if (!_config.signature || _config.signature.trim() === '') {
+        if (!assinaturaTemConteudo()) {
             return;
         }
 
