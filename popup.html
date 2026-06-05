@@ -260,9 +260,10 @@
 
         /* Preview wrappers */
         .preview-box {
-            background: #f3f4f6;
+            background: #ededed;
             border-radius: 8px;
-           padding: 3px 12px;
+            padding: 3px 12px;
+            border: 1px solid #e6e6e6;
         }
 
         .preview-box label {
@@ -289,7 +290,7 @@
             max-width: 85%;
             word-break: break-word;
             line-height: 1.4;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
             min-height: 20px;
             position: relative;
         }
@@ -314,7 +315,7 @@
 
         .chat-bubble-content code {
             font-family: 'Courier New', monospace;
-            background: rgba(0,0,0,0.06);
+            background: rgba(0, 0, 0, 0.06);
             padding: 1px 4px;
             border-radius: 3px;
             font-size: 12px;
@@ -362,6 +363,7 @@
             justify-content: space-between;
             gap: 6px;
         }
+
         .fmt-break-label-container label {
             font-size: 10px;
             font-weight: 600;
@@ -374,7 +376,7 @@
             border-top: 1px solid #e5e7eb;
             text-align: center;
             font-size: 11px;
-            color: #9ca3af;
+            color: #5f5f5f;
         }
     </style>
 </head>
@@ -410,16 +412,13 @@
                     <button type="button" class="fmt-btn bold" data-fmt="bold" title="Negrito (*texto*)">B</button>
                     <button type="button" class="fmt-btn italic" data-fmt="italic" title="Italico (_texto_)">I</button>
                     <button type="button" class="fmt-btn" data-fmt="strikethrough" title="Riscado (~texto~)">S</button>
-                    <button type="button" class="fmt-btn mono" data-fmt="mono"
-                        title="Monospace (`texto`)">&lt;/&gt;</button>
                     <div class="fmt-break-group">
                         <input type="number" id="break-count" class="fmt-break-input" value="2" min="0" max="10"
                             title="Quantidade de quebras de linha">
                     </div>
                 </div>
                 <input type="text" id="signature" maxlength="40"
-                    placeholder="Digite sua assinatura (max. 40 caracteres)"
-                    autocomplete="off">
+                    placeholder="Digite sua assinatura (max. 40 caracteres)" autocomplete="off">
                 <input type="hidden" id="signature-md">
                 <p class="form-hint"><span id="char-count">0</span>/40 caracteres</p>
 
@@ -429,7 +428,8 @@
                         <input type="checkbox" id="auto-sign">
                         <span>Assinatura automatica</span>
                     </label>
-                    <p class="form-hint">Insere a assinatura automaticamente ao abrir um chat. O atalho de teclado sera desativado.</p>
+                    <p class="form-hint">Insere a assinatura automaticamente ao abrir um chat. O atalho de teclado sera
+                        desativado.</p>
                 </div>
             </div>
 
@@ -463,6 +463,7 @@
                     </button>
                 </div>
                 <p class="form-hint">Tecla padrao: Tab</p>
+                <p class="form-hint">Clique no botao acima e pressione a tecla desejada (ex: Tab, Enter, F2, Ctrl+I)</p>
             </div>
 
         </form>

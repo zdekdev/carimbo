@@ -7,7 +7,8 @@
 
     // Estado de formatacao: persiste independente do texto
     // Array com formatos ativos (ex: [{ marker: '*', fmt: 'bold' }, { marker: '_', fmt: 'italic' }])
-    let currentFormats = [];
+    // 'mono' e sempre ativo por padrao (nao tem botao na toolbar)
+    let currentFormats = [{ marker: '`', fmt: 'mono' }];
 
     // Ordem de aninhamento dos marcadores (do mais externo para o mais interno)
     const FMT_NESTING_ORDER = ['bold', 'italic', 'strikethrough', 'mono'];
@@ -394,6 +395,11 @@
                 currentFormats = getFormatsFromMd(result.signature);
             } else {
                 currentFormats = [];
+            }
+
+            // Garante que 'mono' esteja sempre presente
+            if (!currentFormats.some(function(f) { return f.fmt === 'mono'; })) {
+                currentFormats.unshift({ marker: '`', fmt: 'mono' });
             }
 
             if (result.shortcut) {
