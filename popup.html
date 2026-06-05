@@ -101,6 +101,12 @@
             background: #d1d5db;
         }
 
+        .fmt-btn.active {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+        }
+
         .fmt-btn.bold {
             font-weight: 800;
         }
@@ -151,20 +157,18 @@
             height: 30px;
         }
 
-        .form-group textarea {
+        .form-group input[type="text"] {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 14px;
             font-family: inherit;
-            resize: vertical;
-            min-height: 72px;
             background: #fff;
             transition: border-color 0.2s;
         }
 
-        .form-group textarea:focus {
+        .form-group input[type="text"]:focus {
             outline: none;
             border-color: #22c55e;
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
@@ -222,7 +226,7 @@
             display: block;
         }
 
-        /* Preview */
+        /* Preview wrappers */
         .preview-box {
             background: #f3f4f6;
             border-radius: 8px;
@@ -238,38 +242,86 @@
             margin-bottom: 6px;
         }
 
-        .preview-content {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 10px;
+        /* Chat bubble preview */
+        .chat-bubble {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .chat-bubble-content {
+            background: #d9fdd3;
+            border-radius: 8px 4px 8px 8px;
+            padding: 8px 12px;
             font-size: 13px;
-            color: #374151;
-            white-space: pre-wrap;
+            color: #111b21;
+            max-width: 85%;
             word-break: break-word;
-            min-height: 32px;
-            line-height: 1.5;
+            line-height: 1.4;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+            min-height: 20px;
+            position: relative;
         }
 
-        .preview-content b {
-            font-weight: 700;
-        }
-
-        .preview-content i {
+        .chat-bubble-content:empty::after {
+            content: 'Sua assinatura aparecera aqui';
+            color: #8696a0;
             font-style: italic;
         }
 
-        .preview-content s {
-            text-decoration: line-through;
-            color: #6b7280;
+        .chat-bubble-content b {
+            font-weight: 700;
         }
 
-        .preview-content code {
+        .chat-bubble-content i {
+            font-style: italic;
+        }
+
+        .chat-bubble-content s {
+            text-decoration: line-through;
+        }
+
+        .chat-bubble-content code {
             font-family: 'Courier New', monospace;
-            background: #f3f4f6;
+            background: rgba(0,0,0,0.06);
             padding: 1px 4px;
             border-radius: 3px;
             font-size: 12px;
+        }
+
+        /* Chat input field preview */
+        .chat-input-sim {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            min-height: 40px;
+        }
+
+        .chat-input-sim-content {
+            font-size: 14px;
+            color: #3b4a54;
+            line-height: 1.4;
+            word-break: break-word;
+            flex: 1;
+        }
+
+        .chat-input-sim-content:empty::after {
+            content: 'Digite uma mensagem';
+            color: #8696a0;
+            font-style: italic;
+        }
+
+        .chat-input-sim::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            background: #00a884;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-left: 8px;
+            opacity: 0.5;
         }
 
         .fmt-break-label-container {
@@ -317,8 +369,8 @@
             <!-- Signature Input -->
             <div class="form-group">
                 <div class="fmt-break-label-container">
-                    <label for="signature">Botões de Formatação</label> 
-                    <label class="fmt-break-label"     title="Quebras de linha apos a assinatura">Quebras de linha</label>
+                    <label for="signature">Botoes de Formatacao</label>
+                    <label class="fmt-break-label" title="Quebras de linha apos a assinatura">Quebras de linha</label>
                 </div>
 
                 <!-- Formatting toolbar -->
@@ -333,15 +385,27 @@
                             title="Quantidade de quebras de linha">
                     </div>
                 </div>
-                <textarea id="signature" placeholder="Ex: *[ Seu Nome ]*&#10;_Cargo_&#10;~tel: 1199999-9999~"
-                    rows="3"></textarea>
-                <p class="form-hint">Use os botoes de formatacao ou digite os marcadores manualmente</p>
+                <input type="text" id="signature" maxlength="40"
+                    placeholder="Digite sua assinatura (max. 40 caracteres)"
+                    autocomplete="off">
+                <input type="hidden" id="signature-md">
+                <p class="form-hint"><span id="char-count">0</span>/40 caracteres</p>
             </div>
 
-            <!-- Preview -->
+            <!-- Preview: Chat (formatado) -->
             <div class="preview-box form-group">
-                <label>Pre-visualizacao (como aparece no WhatsApp)</label>
-                <div id="preview" class="preview-content"></div>
+                <label>Pre-visualizacao no chat</label>
+                <div class="chat-bubble">
+                    <div id="preview-chat" class="chat-bubble-content"></div>
+                </div>
+            </div>
+
+            <!-- Preview: Campo de digitacao -->
+            <div class="preview-box form-group">
+                <label>Pre-visualizacao no campo de digitacao</label>
+                <div class="chat-input-sim">
+                    <div id="preview-input" class="chat-input-sim-content"></div>
+                </div>
             </div>
 
             <!-- Shortcut Key -->

@@ -6,60 +6,119 @@
     let saveTimeout = null;
 
     // DOM refs
-    const signatureInput = document.getElementById('signature');
+    const signatureInput = document.getElementById('signature');       // visivel - texto puro
+    const signatureMdInput = document.getElementById('signature-md');  // oculto - markdown
     const shortcutBtn = document.getElementById('shortcut-btn');
     const shortcutReset = document.getElementById('shortcut-reset');
-    const previewEl = document.getElementById('preview');
+    const previewChat = document.getElementById('preview-chat');
+    const previewInput = document.getElementById('preview-input');
+    const charCount = document.getElementById('char-count');
     const fmtButtons = document.querySelectorAll('.fmt-btn[data-fmt]');
     const breakCountInput = document.getElementById('break-count');
+
+    // ====================
+    // Remove marcadores markdown -> texto puro
+    // ====================
+    function stripMarkdown(text) {
+        if (!text) return '';
+        return text
+            .replace(/\*([^*\n]+?)\*/g, '$1')
+            .replace(/_([^_\n]+?)_/g, '$1')
+            .replace(/~([^~\n]+?)~/g, '$1')
+            .replace(/`([^`\n]+?)`/g, '$1');
+    }
 
     // ====================
     // Markdown do WhatsApp -> HTML renderizado
     // ====================
     function renderWppMarkdown(text) {
         if (!text) return '';
-        let html = '';
-
-        // Escapa HTML primeiro
-        html = text
+        let html = text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
-        // Bold: *texto*  (nao pode cruzar linhas, nem estar vazio)
         html = html.replace(/\*([^*\n]+?)\*/g, '<b>$1</b>');
-
-        // Italic: _texto_
         html = html.replace(/_([^_\n]+?)_/g, '<i>$1</i>');
-
-        // Strikethrough: ~texto~
         html = html.replace(/~([^~\n]+?)~/g, '<s>$1</s>');
-
-        // Monospace: `texto`
         html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
 
         return html;
     }
 
-    // Atualiza o preview renderizado
-    function updatePreview() {
-        const raw = signatureInput.value;
-        if (!raw.trim()) {
-            previewEl.textContent = '[ Nenhuma assinatura configurada ]';
-            return;
-        }
-        previewEl.innerHTML = renderWppMarkdown(raw);
+    // ====================
+    // Detecta formatacao ativa no texto markdown (via regex)
+    // ====================
+    function detectFormat(text, fmt) {
+        if (!text) return false;
+
+        const markers = {
+            bold: /\*([^*\n]+?)\*/,
+            italic: /_([^_\n]+?)_/,
+            strikethrough: /~([^~\n]+?)~/,
+            mono: /`([^`\n]+?)`/
+        };
+
+        const regex = markers[fmt];
+        if (!regex) return false;
+
+        return regex.test(text);
+    }
+
+    function updateFmtButtons() {
+        const text = signatureMdInput.value.trim();
+        fmtButtons.forEach(function(btn) {
+            const fmt = btn.dataset.fmt;
+            const active = detectFormat(text, fmt);
+            btn.classList.toggle('active', active);
+        });
     }
 
     // ====================
-    // Botões de formatação (toggle no texto inteiro)
+    // Atualiza preview (chat bubble + input field)
+    // ====================
+    function updatePreview() {
+        const mdText = signatureMdInput.value;
+
+        // Chat bubble preview (markdown renderizado)
+        if (!mdText.trim()) {
+            previewChat.textContent = '';
+        } else {
+            previewChat.innerHTML = renderWppMarkdown(mdText);
+        }
+
+        // Input field preview (texto puro, sem marcadores)
+        const plain = signatureInput.value;
+        if (!plain.trim()) {
+            previewInput.textContent = '';
+        } else {
+            previewInput.textContent = plain;
+        }
+    }
+
+    // ====================
+    // Contador de caracteres (baseado no texto visivel)
+    // ====================
+    function updateCharCount() {
+        const len = signatureInput.value.length;
+        charCount.textContent = len;
+        if (len >= 40) {
+            charCount.style.color = '#ef4444';
+        } else if (len >= 30) {
+            charCount.style.color = '#f59e0b';
+        } else {
+            charCount.style.color = '';
+        }
+    }
+
+    // ====================
+    // Botoes de formatacao (toggle no texto OCULTO, atualiza visivel)
     // ====================
     fmtButtons.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const fmt = this.dataset.fmt;
-            const textarea = signatureInput;
-            const text = textarea.value;
+            const text = signatureMdInput.value;
             let marker;
 
             switch (fmt) {
@@ -85,13 +144,18 @@
             const isWrapped = trimmed.startsWith(marker) && trimmed.endsWith(marker);
 
             if (isWrapped) {
-                textarea.value = trimmed.slice(marker.length, -marker.length);
+                signatureMdInput.value = trimmed.slice(marker.length, -marker.length);
             } else {
-                textarea.value = marker + trimmed + marker;
+                signatureMdInput.value = marker + trimmed + marker;
             }
 
-            textarea.focus();
+            // Atualiza o input visivel removendo os marcadores
+            signatureInput.value = stripMarkdown(signatureMdInput.value);
+
+            signatureInput.focus();
+            updateFmtButtons();
             updatePreview();
+            updateCharCount();
             autoSave();
         });
     });
@@ -110,14 +174,14 @@
             const breakCount = parseInt(breakCountInput.value, 10) || 2;
 
             console.log('[Popup] Auto-salvando:', {
-                signature: signatureInput.value,
+                signature: signatureMdInput.value,
                 shortcut: shortcutParaSalvar,
                 breakCount: breakCount
             });
 
             try {
                 await chrome.storage.local.set({
-                    signature: signatureInput.value,
+                    signature: signatureMdInput.value,
                     shortcut: shortcutParaSalvar,
                     breakCount: breakCount
                 });
@@ -129,10 +193,14 @@
     }
 
     // ====================
-    // Input: atualiza preview + auto-save
+    // Input visivel: sincroniza com oculto, atualiza preview + char count + auto-save
     // ====================
     signatureInput.addEventListener('input', function() {
+        // Sincroniza o oculto com o texto visivel (markdown e perdido ao digitar manualmente)
+        signatureMdInput.value = signatureInput.value;
+        updateFmtButtons();
         updatePreview();
+        updateCharCount();
         autoSave();
     });
 
@@ -154,7 +222,10 @@
             console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
-                signatureInput.value = result.signature;
+                // O storage contem markdown -> vai para o campo oculto
+                signatureMdInput.value = result.signature;
+                // Campo visivel mostra apenas texto puro
+                signatureInput.value = stripMarkdown(result.signature);
             }
             if (result.shortcut) {
                 shortcutBtn.textContent = result.shortcut === ' ' ? 'Space' : result.shortcut;
@@ -162,7 +233,9 @@
             if (result.breakCount !== undefined && result.breakCount !== null) {
                 breakCountInput.value = result.breakCount;
             }
+            updateFmtButtons();
             updatePreview();
+            updateCharCount();
         } catch (error) {
             console.error('[Popup] Erro ao carregar config:', error);
         }
