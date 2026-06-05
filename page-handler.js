@@ -286,8 +286,8 @@
             _camposProcessados.add(campo);
             return;
         }
-        // So insere se o campo estiver vazio (novo chat)
-        if (campoPossuiTexto(campo)) return;
+        // So insere se o usuario ja digitou algo no campo
+        if (!campoPossuiTexto(campo)) return;
 
         _camposProcessados.add(campo);
         inserirCarimbo(campo);
@@ -325,9 +325,22 @@
     }
 
     // ====================
+    // Listener de input: detecta quando o usuario digita no campo
+    // para disparar o auto-insert (evita inserir ao abrir chat vazio)
+    // ====================
+    function iniciarInputListener() {
+        document.body.addEventListener('input', function(event) {
+            var campo = event.target;
+            if (!campo.matches(CAMPO_SELECTOR)) return;
+            tentarAutoCarimbar(campo);
+        }, { passive: true });
+    }
+
+    // ====================
     // Init
     // ====================
     window.addEventListener('keydown', interceptarAtalho, true);
     iniciarObserver();
+    iniciarInputListener();
     console.log('[Carimbo] Handler injetado e ativo');
 })();
