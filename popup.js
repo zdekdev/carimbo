@@ -201,10 +201,13 @@
 
         // Chat bubble preview (markdown renderizado)
         var plainContent = stripMarkdown(mdText).trim();
+        var breakCount = parseInt(breakCountInput.value) || 0;
+        var breaks = '<br>'.repeat(breakCount);
+        var simulatedMsg = '<div style="border: none;margin-bottom:6px;font-size:13px;color:#111b21;line-height:1.4;word-break:break-word;position:relative">Bom dia! Segue o relatório solicitado.</div>';
         if (!plainContent) {
-            previewChat.textContent = '';
+            previewChat.innerHTML = simulatedMsg;
         } else {
-            previewChat.innerHTML = renderWppMarkdown(mdText);
+            previewChat.innerHTML = renderWppMarkdown(mdText) + breaks + simulatedMsg;
         }
 
         // Input field preview (texto puro, sem marcadores)
@@ -382,9 +385,11 @@
     // Break count change -> auto-save
     // ====================
     breakCountInput.addEventListener('input', function() {
+        updatePreview();
         autoSave();
     });
     breakCountInput.addEventListener('change', function() {
+        updatePreview();
         autoSave();
     });
 
