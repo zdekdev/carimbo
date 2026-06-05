@@ -4,7 +4,7 @@
 const defaultConfig = {
     signature: '',
     signatureFormat: null,
-    shortcut: 'Tab',
+    shortcut: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false },
     breakCount: 2,
     autoSign: false
 };

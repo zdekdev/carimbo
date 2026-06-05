@@ -10,6 +10,84 @@
     let currentFormat = null;
     let autoSignEnabled = false;
 
+    // Atalho atual como objeto com modificadores
+    // Formato: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }
+    let currentShortcut = { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
+
+    // ====================
+    // Converte objeto de atalho para string de exibicao
+    // ====================
+    function shortcutToString(shortcut) {
+        if (!shortcut || typeof shortcut === 'string') {
+            // Compatibilidade com formato antigo (string simples)
+            var key = (typeof shortcut === 'string') ? shortcut : (shortcut && shortcut.key);
+            if (!key) return 'Tab';
+            return key === ' ' ? 'Space' : key;
+        }
+        var parts = [];
+        // Ordem padrao de modificadores: Ctrl, Alt, Shift, Meta
+        if (shortcut.ctrlKey || shortcut.metaKey) {
+            // No macOS Meta (Cmd) e mais comum, no Windows/Linux Ctrl
+            var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            if (isMac) {
+                if (shortcut.metaKey) parts.push('Cmd');
+                if (shortcut.ctrlKey) parts.push('Ctrl');
+            } else {
+                if (shortcut.ctrlKey) parts.push('Ctrl');
+                if (shortcut.metaKey) parts.push('Meta');
+            }
+        }
+        if (shortcut.altKey) parts.push('Alt');
+        if (shortcut.shiftKey) parts.push('Shift');
+        var keyDisplay = shortcut.key;
+        if (keyDisplay === ' ') {
+            keyDisplay = 'Space';
+        } else if (keyDisplay.length === 1) {
+            keyDisplay = keyDisplay.toUpperCase();
+        }
+        parts.push(keyDisplay);
+        return parts.join('+');
+    }
+
+    // ====================
+    // Normaliza o valor da tecla para comparacao consistente
+    // ====================
+    function normalizeKey(key) {
+        if (!key) return '';
+        if (key.length === 1) return key.toLowerCase();
+        return key;
+    }
+
+    // ====================
+    // Faz parse do atalho salvo no storage (suporta formato antigo e novo)
+    // ====================
+    function parseShortcut(value) {
+        if (!value) {
+            return { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
+        }
+        // Novo formato: objeto com key + modificadores
+        if (typeof value === 'object' && value.key !== undefined) {
+            return {
+                key: normalizeKey(value.key),
+                ctrlKey: !!value.ctrlKey,
+                shiftKey: !!value.shiftKey,
+                altKey: !!value.altKey,
+                metaKey: !!value.metaKey
+            };
+        }
+        // Formato antigo: string simples (sem modificadores)
+        if (typeof value === 'string') {
+            return {
+                key: normalizeKey(value),
+                ctrlKey: false,
+                shiftKey: false,
+                altKey: false,
+                metaKey: false
+            };
+        }
+        return { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
+    }
+
     // DOM refs
     const signatureInput = document.getElementById('signature');       // visivel - texto puro
     const signatureMdInput = document.getElementById('signature-md');  // oculto - markdown
@@ -217,11 +295,6 @@
     function autoSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(function() {
-            var shortcutParaSalvar = shortcutBtn.textContent;
-            if (shortcutParaSalvar === 'Space') {
-                shortcutParaSalvar = ' ';
-            }
-
             var breakCount = parseInt(breakCountInput.value, 10) || 2;
             var formatToSave = currentFormat ? currentFormat.fmt : null;
 
@@ -229,10 +302,19 @@
             var plainContent = stripMarkdown(signatureMdInput.value).trim();
             var sigToSave = plainContent ? signatureMdInput.value : '';
 
+            // Salva o atalho como objeto com modificadores
+            var shortcutToSave = {
+                key: normalizeKey(currentShortcut.key),
+                ctrlKey: !!currentShortcut.ctrlKey,
+                shiftKey: !!currentShortcut.shiftKey,
+                altKey: !!currentShortcut.altKey,
+                metaKey: !!currentShortcut.metaKey
+            };
+
             console.log('[Popup] Auto-salvando:', {
                 signature: sigToSave,
                 signatureFormat: formatToSave,
-                shortcut: shortcutParaSalvar,
+                shortcut: shortcutToSave,
                 breakCount: breakCount,
                 autoSign: autoSignEnabled
             });
@@ -240,7 +322,7 @@
             chrome.storage.local.set({
                 signature: sigToSave,
                 signatureFormat: formatToSave,
-                shortcut: shortcutParaSalvar,
+                shortcut: shortcutToSave,
                 breakCount: breakCount,
                 autoSign: autoSignEnabled
             }).then(function() {
@@ -274,7 +356,8 @@
             }
 
             if (result.shortcut) {
-                shortcutBtn.textContent = result.shortcut === ' ' ? 'Space' : result.shortcut;
+                currentShortcut = parseShortcut(result.shortcut);
+                shortcutBtn.textContent = shortcutToString(currentShortcut);
             }
             if (result.breakCount !== undefined && result.breakCount !== null) {
                 breakCountInput.value = result.breakCount;
@@ -306,22 +389,35 @@
     });
 
     // ====================
-    // Shortcut key capture
+    // Shortcut key capture (suporta combinações com modificadores)
     // ====================
     shortcutBtn.addEventListener('click', function() {
         if (listening) return;
         listening = true;
         shortcutBtn.classList.add('listening');
         shortcutBtn.textContent = 'Pressione uma tecla...';
-        console.log('[Popup] Aguardando tecla...');
+        console.log('[Popup] Aguardando tecla (modificadores suportados)...');
 
         function keyHandler(e) {
+            // Ignora pressionamento apenas de teclas modificadoras
+            if (['Control', 'Shift', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock'].indexOf(e.key) !== -1) {
+                return;
+            }
+
             e.preventDefault();
             e.stopPropagation();
 
-            var key = e.key;
-            var displayKey = key === ' ' ? 'Space' : key;
-            console.log('[Popup] Tecla capturada:', key, '(exibindo como:', displayKey + ')');
+            var capturedShortcut = {
+                key: normalizeKey(e.key),
+                ctrlKey: e.ctrlKey,
+                shiftKey: e.shiftKey,
+                altKey: e.altKey,
+                metaKey: e.metaKey
+            };
+
+            currentShortcut = capturedShortcut;
+            var displayKey = shortcutToString(capturedShortcut);
+            console.log('[Popup] Tecla capturada:', JSON.stringify(capturedShortcut), '(exibindo como:', displayKey + ')');
 
             shortcutBtn.textContent = displayKey;
             shortcutBtn.classList.remove('listening');
@@ -336,7 +432,7 @@
             if (listening) {
                 listening = false;
                 shortcutBtn.classList.remove('listening');
-                shortcutBtn.textContent = 'Tab';
+                shortcutBtn.textContent = shortcutToString(currentShortcut);
                 document.removeEventListener('keydown', keyHandler, true);
                 console.log('[Popup] Timeout - nenhuma tecla foi pressionada');
             }
@@ -344,6 +440,7 @@
     });
 
     shortcutReset.addEventListener('click', function() {
+        currentShortcut = { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
         shortcutBtn.textContent = 'Tab';
         console.log('[Popup] Atalho resetado para Tab');
         autoSave();

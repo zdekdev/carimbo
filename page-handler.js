@@ -148,6 +148,38 @@
     }
 
     // ====================
+    // Normaliza o valor da tecla para comparacao consistente
+    // ====================
+    function normalizarTecla(key) {
+        if (!key) return '';
+        if (key.length === 1) return key.toLowerCase();
+        return key;
+    }
+
+    // ====================
+    // Verifica se o evento de teclado corresponde ao atalho configurado
+    // Suporta tanto o formato antigo (string) quanto o novo (objeto com modificadores)
+    // ====================
+    function atalhoCorresponde(evento, shortcut) {
+        // Formato antigo: string simples, sem modificadores
+        if (typeof shortcut === 'string') {
+            return normalizarTecla(evento.key) === normalizarTecla(shortcut) &&
+                   !evento.ctrlKey && !evento.shiftKey && !evento.altKey && !evento.metaKey;
+        }
+
+        // Formato novo: objeto com key + modificadores
+        if (typeof shortcut === 'object' && shortcut.key !== undefined) {
+            return normalizarTecla(evento.key) === normalizarTecla(shortcut.key) &&
+                   !!evento.ctrlKey === !!shortcut.ctrlKey &&
+                   !!evento.shiftKey === !!shortcut.shiftKey &&
+                   !!evento.altKey === !!shortcut.altKey &&
+                   !!evento.metaKey === !!shortcut.metaKey;
+        }
+
+        return false;
+    }
+
+    // ====================
     // Intercepta atalho manual (BLOQUEADO se autoSign ativo)
     // ====================
     function interceptarAtalho(evento) {
@@ -162,7 +194,7 @@
             return;
         }
 
-        if (evento.key !== _config.shortcut) {
+        if (!atalhoCorresponde(evento, _config.shortcut)) {
             return;
         }
 
@@ -170,6 +202,7 @@
             return;
         }
 
+        // Bloqueia o comportamento padrao do navegador para esta combinacao
         evento.preventDefault();
         evento.stopImmediatePropagation();
 
