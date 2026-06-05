@@ -8,6 +8,7 @@
     // Estado de formatacao: persiste independente do texto
     // null = sem formatacao | { marker: '*', fmt: 'bold' } | etc.
     let currentFormat = null;
+    let autoSignEnabled = false;
 
     // DOM refs
     const signatureInput = document.getElementById('signature');       // visivel - texto puro
@@ -19,6 +20,8 @@
     const charCount = document.getElementById('char-count');
     const fmtButtons = document.querySelectorAll('.fmt-btn[data-fmt]');
     const breakCountInput = document.getElementById('break-count');
+    const autoSignCheckbox = document.getElementById('auto-sign');
+    const shortcutSection = document.getElementById('shortcut-section');
 
     // Marcadores por tipo de formatacao
     const formatDefs = {
@@ -102,6 +105,17 @@
     }
 
     // ====================
+    // Ativa/desativa UI do atalho conforme autoSign
+    // ====================
+    function toggleShortcutUI() {
+        if (autoSignCheckbox.checked) {
+            shortcutSection.classList.add('shortcut-disabled');
+        } else {
+            shortcutSection.classList.remove('shortcut-disabled');
+        }
+    }
+
+    // ====================
     // Atualiza preview (chat bubble + input field)
     // ====================
     function updatePreview() {
@@ -160,6 +174,15 @@
     });
 
     // ====================
+    // Auto-sign toggle
+    // ====================
+    autoSignCheckbox.addEventListener('change', function() {
+        autoSignEnabled = this.checked;
+        toggleShortcutUI();
+        autoSave();
+    });
+
+    // ====================
     // Botoes de formatacao (toggle no formato, atualiza ambos os campos)
     // ====================
     fmtButtons.forEach(function(btn) {
@@ -210,14 +233,16 @@
                 signature: sigToSave,
                 signatureFormat: formatToSave,
                 shortcut: shortcutParaSalvar,
-                breakCount: breakCount
+                breakCount: breakCount,
+                autoSign: autoSignEnabled
             });
 
             chrome.storage.local.set({
                 signature: sigToSave,
                 signatureFormat: formatToSave,
                 shortcut: shortcutParaSalvar,
-                breakCount: breakCount
+                breakCount: breakCount,
+                autoSign: autoSignEnabled
             }).then(function() {
                 console.log('[Popup] Salvo!');
             }).catch(function(error) {
@@ -230,7 +255,7 @@
     // Load config
     // ====================
     function loadConfig() {
-        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount']).then(function(result) {
+        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign']).then(function(result) {
             console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
@@ -254,6 +279,13 @@
             if (result.breakCount !== undefined && result.breakCount !== null) {
                 breakCountInput.value = result.breakCount;
             }
+
+            // Restaura autoSign
+            if (result.autoSign !== undefined) {
+                autoSignEnabled = result.autoSign;
+            }
+            autoSignCheckbox.checked = autoSignEnabled;
+            toggleShortcutUI();
 
             updateFmtButtons();
             updatePreview();

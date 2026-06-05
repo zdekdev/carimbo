@@ -4,15 +4,24 @@
 (function() {
     'use strict';
 
-    let _config = {
+    var _config = {
         signature: '',
         shortcut: 'Tab',
-        breakCount: 2
+        breakCount: 2,
+        autoSign: false
     };
 
+    // Rastreia elementos onde a assinatura ja foi inserida automaticamente
+    var _camposProcessados = new WeakSet();
+
+    // Selector do campo de chat do WhatsApp
+    var CAMPO_SELECTOR = 'div[contenteditable="true"][data-tab="10"], div[data-lexical-editor="true"]';
+
     function aplicarConfig(data) {
-        if (data.signature !== undefined) {
+        var changed = false;
+        if (data.signature !== undefined && _config.signature !== data.signature) {
             _config.signature = data.signature;
+            changed = true;
         }
         if (data.shortcut !== undefined) {
             _config.shortcut = data.shortcut;
@@ -20,7 +29,16 @@
         if (data.breakCount !== undefined && data.breakCount !== null) {
             _config.breakCount = data.breakCount;
         }
+        if (data.autoSign !== undefined && _config.autoSign !== data.autoSign) {
+            _config.autoSign = data.autoSign;
+            changed = true;
+        }
         console.log('[WhatsApp Signature - Page] Config aplicada:', JSON.stringify(_config));
+
+        // Se autoSign foi ativado, tenta inserir em campos ja visiveis (nao processados)
+        if (changed && _config.autoSign && _config.signature) {
+            tentarAutoInserirCamposExistentes();
+        }
     }
 
     // Recebe config atualizada do content script via postMessage
@@ -33,13 +51,16 @@
     window.postMessage({ type: 'WHATSAPP_SIGNATURE_READY' }, '*');
     console.log('[WhatsApp Signature - Page] Aguardando config do content script...');
 
+    // ====================
+    // Helper functions
+    // ====================
     function encontrarPrimeiroNoTexto(elemento) {
-        const walker = document.createTreeWalker(
+        var walker = document.createTreeWalker(
             elemento,
             NodeFilter.SHOW_TEXT,
             null
         );
-        let node = walker.firstChild();
+        var node = walker.firstChild();
         while (node && node.textContent.trim() === '') {
             node = walker.nextNode();
         }
@@ -47,13 +68,13 @@
     }
 
     function posicionarCursor(elemento, noInicio) {
-        const selection = window.getSelection();
+        var selection = window.getSelection();
         if (!selection) return;
 
-        const range = document.createRange();
+        var range = document.createRange();
 
         if (noInicio) {
-            const primeiroNo = encontrarPrimeiroNoTexto(elemento);
+            var primeiroNo = encontrarPrimeiroNoTexto(elemento);
             if (primeiroNo) {
                 range.setStart(primeiroNo, 0);
                 range.collapse(true);
@@ -71,7 +92,7 @@
     }
 
     function campoPossuiTexto(elemento) {
-        const texto = elemento.textContent || '';
+        var texto = elemento.textContent || '';
         return texto.trim().length > 0;
     }
 
@@ -83,7 +104,6 @@
 
     function assinaturaTemConteudo() {
         if (!_config.signature) return false;
-        // Remove marcadores markdown e verifica se existe texto real
         var plain = _config.signature
             .replace(/\*([^*\n]+?)\*/g, '$1')
             .replace(/_([^_\n]+?)_/g, '$1')
@@ -94,7 +114,7 @@
     }
 
     function simularShiftEnter(elemento) {
-        const eventoConfig = {
+        var eventoConfig = {
             key: 'Enter',
             code: 'Enter',
             keyCode: 13,
@@ -108,10 +128,37 @@
         elemento.dispatchEvent(new KeyboardEvent('keyup', eventoConfig));
     }
 
-    function interceptarAtalho(evento) {
-        const campo = evento.target;
+    function inserirAssinatura(campo) {
+        campo.focus();
 
-        if (!campo || !campo.matches('div[contenteditable="true"][data-tab="10"], div[data-lexical-editor="true"]')) {
+        if (campoPossuiTexto(campo)) {
+            posicionarCursor(campo, true);
+            document.execCommand('insertText', false, _config.signature);
+        } else {
+            posicionarCursor(campo, false);
+            document.execCommand('insertText', false, _config.signature);
+        }
+
+        var quebras = _config.breakCount || 2;
+        for (var i = 0; i < quebras; i++) {
+            simularShiftEnter(campo);
+        }
+
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // ====================
+    // Intercepta atalho manual (BLOQUEADO se autoSign ativo)
+    // ====================
+    function interceptarAtalho(evento) {
+        // Se autoSign esta ativo, nao permite insercao manual via atalho
+        if (_config.autoSign) {
+            return;
+        }
+
+        var campo = evento.target;
+
+        if (!campo || !campo.matches(CAMPO_SELECTOR)) {
             return;
         }
 
@@ -130,27 +177,62 @@
             return;
         }
 
-        campo.focus();
-
-        const temTexto = campoPossuiTexto(campo);
-
-        if (temTexto) {
-            posicionarCursor(campo, true);
-            document.execCommand('insertText', false, _config.signature);
-        } else {
-            posicionarCursor(campo, false);
-            document.execCommand('insertText', false, _config.signature);
-        }
-
-        // Aplica a quantidade configurada de quebras de linha
-        const quebras = _config.breakCount || 2;
-        for (let i = 0; i < quebras; i++) {
-            simularShiftEnter(campo);
-        }
-
-        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        inserirAssinatura(campo);
     }
 
+    // ====================
+    // Auto-insert: insere assinatura automaticamente ao abrir chat
+    // ====================
+    function tentarAutoInserir(campo) {
+        if (!_config.autoSign) return;
+        if (!assinaturaTemConteudo()) return;
+        if (_camposProcessados.has(campo)) return;
+        if (assinaturaJaExiste(campo)) {
+            _camposProcessados.add(campo);
+            return;
+        }
+        // So insere se o campo estiver vazio (novo chat)
+        if (campoPossuiTexto(campo)) return;
+
+        _camposProcessados.add(campo);
+        inserirAssinatura(campo);
+    }
+
+    function tentarAutoInserirCamposExistentes() {
+        var campos = document.querySelectorAll(CAMPO_SELECTOR);
+        for (var i = 0; i < campos.length; i++) {
+            tentarAutoInserir(campos[i]);
+        }
+    }
+
+    // MutationObserver: detecta novos campos de chat
+    function iniciarObserver() {
+        var timeout = null;
+
+        var observer = new MutationObserver(function(mutations) {
+            // Debounce: processa em batch via rAF
+            if (timeout) return;
+            timeout = requestAnimationFrame(function() {
+                timeout = null;
+                var campos = document.querySelectorAll(CAMPO_SELECTOR);
+                for (var i = 0; i < campos.length; i++) {
+                    tentarAutoInserir(campos[i]);
+                }
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        console.log('[WhatsApp Signature - Page] MutationObserver iniciado');
+    }
+
+    // ====================
+    // Init
+    // ====================
     window.addEventListener('keydown', interceptarAtalho, true);
+    iniciarObserver();
     console.log('[WhatsApp Signature - Page] Handler injetado e ativo');
 })();

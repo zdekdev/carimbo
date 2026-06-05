@@ -180,6 +180,38 @@
             margin-top: 4px;
         }
 
+        /* Auto-signature toggle */
+        .auto-sign-row {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .auto-sign-label {
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            margin-bottom: 2px !important;
+            color: #374151 !important;
+        }
+
+        .auto-sign-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #22c55e;
+            cursor: pointer;
+        }
+
+        /* Shortcut section disabled state */
+        .shortcut-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            user-select: none;
+        }
+
         .shortcut-row {
             display: flex;
             gap: 8px;
@@ -390,6 +422,15 @@
                     autocomplete="off">
                 <input type="hidden" id="signature-md">
                 <p class="form-hint"><span id="char-count">0</span>/40 caracteres</p>
+
+                <!-- Auto-signature toggle -->
+                <div class="auto-sign-row">
+                    <label class="auto-sign-label" for="auto-sign">
+                        <input type="checkbox" id="auto-sign">
+                        <span>Assinatura automatica</span>
+                    </label>
+                    <p class="form-hint">Insere a assinatura automaticamente ao abrir um chat. O atalho de teclado sera desativado.</p>
+                </div>
             </div>
 
             <!-- Preview: Chat (formatado) -->
@@ -409,7 +450,7 @@
             </div>
 
             <!-- Shortcut Key -->
-            <div class="form-group">
+            <div class="form-group" id="shortcut-section">
                 <label>Tecla de Atalho</label>
                 <div class="shortcut-row">
                     <button type="button" id="shortcut-btn" class="shortcut-btn">Tab</button>

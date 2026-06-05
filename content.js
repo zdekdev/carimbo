@@ -6,7 +6,8 @@
     let config = {
         signature: '',
         shortcut: 'Tab',
-        breakCount: 2
+        breakCount: 2,
+        autoSign: false
     };
 
     // Envia config atualizada para o script injetado na pagina
@@ -15,7 +16,8 @@
             type: 'WHATSAPP_SIGNATURE_CONFIG',
             signature: config.signature,
             shortcut: config.shortcut,
-            breakCount: config.breakCount
+            breakCount: config.breakCount,
+            autoSign: config.autoSign
         }, '*');
         console.log('[WhatsApp Signature] Config enviada para pagina:', config);
     }
@@ -30,7 +32,7 @@
     // Carrega config do storage
     async function loadConfig() {
         try {
-            const result = await chrome.storage.local.get(['signature', 'shortcut', 'breakCount']);
+            const result = await chrome.storage.local.get(['signature', 'shortcut', 'breakCount', 'autoSign']);
             if (result.signature !== undefined) {
                 config.signature = result.signature;
             }
@@ -39,6 +41,9 @@
             }
             if (result.breakCount !== undefined && result.breakCount !== null) {
                 config.breakCount = result.breakCount;
+            }
+            if (result.autoSign !== undefined) {
+                config.autoSign = result.autoSign;
             }
             console.log('[WhatsApp Signature] Config carregada do storage:', config);
             enviarConfigParaPagina();
@@ -61,6 +66,10 @@
             if (changes.breakCount) {
                 config.breakCount = changes.breakCount.newValue;
                 console.log('[WhatsApp Signature] Quebras de linha atualizadas:', config.breakCount);
+            }
+            if (changes.autoSign) {
+                config.autoSign = changes.autoSign.newValue;
+                console.log('[WhatsApp Signature] Assinatura automatica atualizada:', config.autoSign);
             }
             enviarConfigParaPagina();
         }

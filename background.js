@@ -5,7 +5,8 @@ const defaultConfig = {
     signature: '',
     signatureFormat: null,
     shortcut: 'Tab',
-    breakCount: 2
+    breakCount: 2,
+    autoSign: false
 };
 
 // Initialize extension - set default config on first install
