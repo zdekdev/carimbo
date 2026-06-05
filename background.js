@@ -3,7 +3,7 @@
 // Default configuration
 const defaultConfig = {
     signature: '',
-    signatureFormat: null,
+    signatureFormat: [],
     shortcut: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false },
     breakCount: 2,
     autoSign: false

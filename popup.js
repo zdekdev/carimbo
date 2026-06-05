@@ -6,8 +6,11 @@
     let saveTimeout = null;
 
     // Estado de formatacao: persiste independente do texto
-    // null = sem formatacao | { marker: '*', fmt: 'bold' } | etc.
-    let currentFormat = null;
+    // Array com formatos ativos (ex: [{ marker: '*', fmt: 'bold' }, { marker: '_', fmt: 'italic' }])
+    let currentFormats = [];
+
+    // Ordem de aninhamento dos marcadores (do mais externo para o mais interno)
+    const FMT_NESTING_ORDER = ['bold', 'italic', 'strikethrough', 'mono'];
     let autoSignEnabled = false;
 
     // Atalho atual como objeto com modificadores
@@ -110,35 +113,51 @@
     };
 
     // ====================
-    // Detecta qual formatacao esta ativa no texto markdown
+    // Detecta quais formatacoes estao ativas no texto markdown (recursivo)
     // ====================
-    function getFormatFromMd(text) {
-        if (!text) return null;
+    function getFormatsFromMd(text) {
+        if (!text) return [];
         var trimmed = text.trim();
+        var formats = [];
 
-        var fmtOrder = ['bold', 'italic', 'strikethrough', 'mono'];
-        for (var i = 0; i < fmtOrder.length; i++) {
-            var def = formatDefs[fmtOrder[i]];
+        for (var i = 0; i < FMT_NESTING_ORDER.length; i++) {
+            var fmt = FMT_NESTING_ORDER[i];
+            var def = formatDefs[fmt];
             var marker = def.marker;
-            // So considera formatado se: comeca E termina com o marker, e ha conteudo real entre eles
             if (trimmed.startsWith(marker) && trimmed.endsWith(marker) && trimmed.length >= marker.length * 2 + 1) {
                 var inner = trimmed.slice(marker.length, -marker.length);
                 if (inner.trim().length > 0) {
-                    return def;
+                    formats.push(def);
+                    // Continua recursivamente no conteudo interno
+                    var innerFormats = getFormatsFromMd(inner);
+                    for (var j = 0; j < innerFormats.length; j++) {
+                        formats.push(innerFormats[j]);
+                    }
+                    break; // encontrou o marcador mais externo, para aqui
                 }
             }
         }
-        return null;
+        return formats;
     }
 
     // ====================
-    // Reconstroi o texto markdown combinando format + texto puro
+    // Reconstroi o texto markdown combinando formatos + texto puro
     // ====================
     function buildMarkdown(plainText) {
         if (!plainText || !plainText.trim()) return '';
-        var fmt = currentFormat;
-        if (!fmt) return plainText.trim();
-        return fmt.marker + plainText.trim() + fmt.marker;
+        var result = plainText.trim();
+        // Aplica marcadores na ordem de aninhamento (do mais interno para o mais externo)
+        for (var i = FMT_NESTING_ORDER.length - 1; i >= 0; i--) {
+            var fmt = FMT_NESTING_ORDER[i];
+            for (var j = 0; j < currentFormats.length; j++) {
+                if (currentFormats[j].fmt === fmt) {
+                    var marker = currentFormats[j].marker;
+                    result = marker + result + marker;
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     // ====================
@@ -177,7 +196,7 @@
     function updateFmtButtons() {
         fmtButtons.forEach(function(btn) {
             var fmt = btn.dataset.fmt;
-            var active = currentFormat !== null && currentFormat.fmt === fmt;
+            var active = currentFormats.some(function(f) { return f.fmt === fmt; });
             btn.classList.toggle('active', active);
         });
     }
@@ -210,12 +229,12 @@
             previewChat.innerHTML = renderWppMarkdown(mdText) + breaks + simulatedMsg;
         }
 
-        // Input field preview (texto puro, sem marcadores)
-        var plain = signatureInput.value;
-        if (!plain.trim()) {
+        // Input field preview (texto cru com marcadores markdown visiveis)
+        var mdRaw = signatureMdInput.value;
+        if (!mdRaw.trim()) {
             previewInput.textContent = '';
         } else {
-            previewInput.textContent = plain;
+            previewInput.textContent = mdRaw;
         }
     }
 
@@ -264,7 +283,7 @@
     });
 
     // ====================
-    // Botoes de formatacao (toggle no formato, atualiza ambos os campos)
+    // Botoes de formatacao (toggle no array de formatos)
     // ====================
     fmtButtons.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -273,15 +292,24 @@
             var def = formatDefs[fmt];
             if (!def) return;
 
-            // Se ja esta com ESTA formatacao ativa -> remove
-            if (currentFormat && currentFormat.fmt === fmt) {
-                currentFormat = null;
-            } else {
-                // Aplica nova formatacao (substitui qualquer anterior)
-                currentFormat = def;
+            // Verifica se ja esta ativo
+            var idx = -1;
+            for (var i = 0; i < currentFormats.length; i++) {
+                if (currentFormats[i].fmt === fmt) {
+                    idx = i;
+                    break;
+                }
             }
 
-            // Reconstroi o campo oculto com a nova formatacao
+            if (idx !== -1) {
+                // Remove do array
+                currentFormats.splice(idx, 1);
+            } else {
+                // Adiciona ao array
+                currentFormats.push(def);
+            }
+
+            // Reconstroi o campo oculto com os novos formatos
             syncMdFromVisible();
 
             signatureInput.focus();
@@ -299,7 +327,7 @@
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(function() {
             var breakCount = parseInt(breakCountInput.value, 10) || 2;
-            var formatToSave = currentFormat ? currentFormat.fmt : null;
+            var formatToSave = currentFormats.map(function(f) { return f.fmt; });
 
             // So salva signature-md se houver conteudo real (sem marcadores)
             var plainContent = stripMarkdown(signatureMdInput.value).trim();
@@ -348,14 +376,24 @@
                 signatureInput.value = stripMarkdown(result.signature);
             }
 
-            // Restaura o formato salvo
-            if (result.signatureFormat && formatDefs[result.signatureFormat]) {
-                currentFormat = formatDefs[result.signatureFormat];
+            // Restaura os formatos salvos
+            if (result.signatureFormat) {
+                if (Array.isArray(result.signatureFormat)) {
+                    // Novo formato: array de nomes
+                    currentFormats = [];
+                    for (var i = 0; i < result.signatureFormat.length; i++) {
+                        var def = formatDefs[result.signatureFormat[i]];
+                        if (def) currentFormats.push(def);
+                    }
+                } else if (typeof result.signatureFormat === 'string' && formatDefs[result.signatureFormat]) {
+                    // Compatibilidade com formato antigo (string unica)
+                    currentFormats = [formatDefs[result.signatureFormat]];
+                }
             } else if (result.signature) {
-                // Fallback: detecta formato a partir do markdown salvo
-                currentFormat = getFormatFromMd(result.signature);
+                // Fallback: detecta formatos a partir do markdown salvo
+                currentFormats = getFormatsFromMd(result.signature);
             } else {
-                currentFormat = null;
+                currentFormats = [];
             }
 
             if (result.shortcut) {
