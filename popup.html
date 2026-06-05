@@ -122,6 +122,29 @@
             font-weight: 700;
         }
 
+        /* Date/Time insert buttons */
+        .fmt-btn-date,
+        .fmt-btn-time {
+            color: #6b7280;
+        }
+
+        .fmt-btn-date:hover,
+        .fmt-btn-time:hover {
+            color: #374151;
+        }
+
+        .fmt-btn-date svg,
+        .fmt-btn-time svg {
+            display: block;
+        }
+
+        .fmt-btn-date.active,
+        .fmt-btn-time.active {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+        }
+
         /* Break count control */
         .fmt-break-group {
             display: flex;
@@ -412,6 +435,20 @@
                     <button type="button" class="fmt-btn bold" data-fmt="bold" title="Negrito (*texto*)">B</button>
                     <button type="button" class="fmt-btn italic" data-fmt="italic" title="Italico (_texto_)">I</button>
                     <button type="button" class="fmt-btn" data-fmt="strikethrough" title="Riscado (~texto~)">S</button>
+                    <button type="button" class="fmt-btn fmt-btn-date" id="btn-insert-date" title="Inserir data atual (dd-mm-YYYY)">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="fmt-btn fmt-btn-time" id="btn-insert-time" title="Inserir hora atual (00:00)">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </button>
                     <div class="fmt-break-group">
                         <input type="number" id="break-count" class="fmt-break-input" value="2" min="0" max="10"
                             title="Quantidade de quebras de linha">

@@ -8,7 +8,9 @@
         signature: '',
         shortcut: 'Tab',
         breakCount: 2,
-        autoSign: false
+        autoSign: false,
+        showDate: false,
+        showTime: false
     };
 
     // Rastreia elementos onde a assinatura ja foi inserida automaticamente
@@ -32,6 +34,12 @@
         if (data.autoSign !== undefined && _config.autoSign !== data.autoSign) {
             _config.autoSign = data.autoSign;
             changed = true;
+        }
+        if (data.showDate !== undefined) {
+            _config.showDate = data.showDate;
+        }
+        if (data.showTime !== undefined) {
+            _config.showTime = data.showTime;
         }
         console.log('[WhatsApp Signature - Page] Config aplicada:', JSON.stringify(_config));
 
@@ -131,12 +139,32 @@
     function inserirAssinatura(campo) {
         campo.focus();
 
+        // Monta texto da assinatura com data/hora se ativados
+        var textoAssinatura = _config.signature;
+        var dtParts = [];
+        if (_config.showDate) {
+            var now = new Date();
+            var day = String(now.getDate()).padStart(2, '0');
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var year = now.getFullYear();
+            dtParts.push(day + '-' + month + '-' + year);
+        }
+        if (_config.showTime) {
+            var now2 = new Date();
+            var hours = String(now2.getHours()).padStart(2, '0');
+            var minutes = String(now2.getMinutes()).padStart(2, '0');
+            dtParts.push(hours + ':' + minutes);
+        }
+        if (dtParts.length > 0) {
+            textoAssinatura = textoAssinatura + ' ' + dtParts.join(' ');
+        }
+
         if (campoPossuiTexto(campo)) {
             posicionarCursor(campo, true);
-            document.execCommand('insertText', false, _config.signature);
+            document.execCommand('insertText', false, textoAssinatura);
         } else {
             posicionarCursor(campo, false);
-            document.execCommand('insertText', false, _config.signature);
+            document.execCommand('insertText', false, textoAssinatura);
         }
 
         var quebras = _config.breakCount || 2;

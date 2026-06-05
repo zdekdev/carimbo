@@ -6,7 +6,9 @@ const defaultConfig = {
     signatureFormat: ['mono'],
     shortcut: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false },
     breakCount: 2,
-    autoSign: false
+    autoSign: false,
+    showDate: false,
+    showTime: false
 };
 
 // Initialize extension - set default config on first install

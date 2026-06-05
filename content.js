@@ -7,7 +7,9 @@
         signature: '',
         shortcut: 'Tab',
         breakCount: 2,
-        autoSign: false
+        autoSign: false,
+        showDate: false,
+        showTime: false
     };
 
     // Envia config atualizada para o script injetado na pagina
@@ -17,7 +19,9 @@
             signature: config.signature,
             shortcut: config.shortcut,
             breakCount: config.breakCount,
-            autoSign: config.autoSign
+            autoSign: config.autoSign,
+            showDate: config.showDate,
+            showTime: config.showTime
         }, '*');
         console.log('[WhatsApp Signature] Config enviada para pagina:', config);
     }
@@ -32,7 +36,7 @@
     // Carrega config do storage
     async function loadConfig() {
         try {
-            const result = await chrome.storage.local.get(['signature', 'shortcut', 'breakCount', 'autoSign']);
+            const result = await chrome.storage.local.get(['signature', 'shortcut', 'breakCount', 'autoSign', 'showDate', 'showTime']);
             if (result.signature !== undefined) {
                 config.signature = result.signature;
             }
@@ -44,6 +48,12 @@
             }
             if (result.autoSign !== undefined) {
                 config.autoSign = result.autoSign;
+            }
+            if (result.showDate !== undefined) {
+                config.showDate = result.showDate;
+            }
+            if (result.showTime !== undefined) {
+                config.showTime = result.showTime;
             }
             console.log('[WhatsApp Signature] Config carregada do storage:', config);
             enviarConfigParaPagina();
@@ -70,6 +80,14 @@
             if (changes.autoSign) {
                 config.autoSign = changes.autoSign.newValue;
                 console.log('[WhatsApp Signature] Assinatura automatica atualizada:', config.autoSign);
+            }
+            if (changes.showDate) {
+                config.showDate = changes.showDate.newValue;
+                console.log('[WhatsApp Signature] Exibir data atualizada:', config.showDate);
+            }
+            if (changes.showTime) {
+                config.showTime = changes.showTime.newValue;
+                console.log('[WhatsApp Signature] Exibir hora atualizada:', config.showTime);
             }
             enviarConfigParaPagina();
         }

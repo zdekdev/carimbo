@@ -13,6 +13,8 @@
     // Ordem de aninhamento dos marcadores (do mais externo para o mais interno)
     const FMT_NESTING_ORDER = ['bold', 'italic', 'strikethrough', 'mono'];
     let autoSignEnabled = false;
+    let showDateInSignature = false;
+    let showTimeInSignature = false;
 
     // Atalho atual como objeto com modificadores
     // Formato: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }
@@ -192,6 +194,24 @@
     }
 
     // ====================
+    // Formata data/hora atual
+    // ====================
+    function getCurrentDate() {
+        var now = new Date();
+        var day = String(now.getDate()).padStart(2, '0');
+        var month = String(now.getMonth() + 1).padStart(2, '0');
+        var year = now.getFullYear();
+        return day + '-' + month + '-' + year;
+    }
+
+    function getCurrentTime() {
+        var now = new Date();
+        var hours = String(now.getHours()).padStart(2, '0');
+        var minutes = String(now.getMinutes()).padStart(2, '0');
+        return hours + ':' + minutes;
+    }
+
+    // ====================
     // Atualiza estado dos botoes de formatacao
     // ====================
     function updateFmtButtons() {
@@ -200,6 +220,13 @@
             var active = currentFormats.some(function(f) { return f.fmt === fmt; });
             btn.classList.toggle('active', active);
         });
+    }
+
+    function updateDateTimeButtons() {
+        var btnDate = document.getElementById('btn-insert-date');
+        var btnTime = document.getElementById('btn-insert-time');
+        if (btnDate) btnDate.classList.toggle('active', showDateInSignature);
+        if (btnTime) btnTime.classList.toggle('active', showTimeInSignature);
     }
 
     // ====================
@@ -219,6 +246,21 @@
     function updatePreview() {
         var mdText = signatureMdInput.value;
 
+        // Constroi sufixo de data/hora para preview
+        var dtSuffix = '';
+        var dtSuffixRaw = '';
+        var parts = [];
+        if (showDateInSignature) {
+            parts.push(getCurrentDate());
+        }
+        if (showTimeInSignature) {
+            parts.push(getCurrentTime());
+        }
+        if (parts.length > 0) {
+            dtSuffix = ' ' + parts.join(' ');
+            dtSuffixRaw = ' ' + parts.join(' ');
+        }
+
         // Chat bubble preview (markdown renderizado)
         var plainContent = stripMarkdown(mdText).trim();
         var breakCount = parseInt(breakCountInput.value) || 0;
@@ -227,7 +269,7 @@
         if (!plainContent) {
             previewChat.innerHTML = simulatedMsg;
         } else {
-            previewChat.innerHTML = renderWppMarkdown(mdText) + breaks + simulatedMsg;
+            previewChat.innerHTML = renderWppMarkdown(mdText) + dtSuffix + breaks + simulatedMsg;
         }
 
         // Input field preview (texto cru com marcadores markdown visiveis)
@@ -235,7 +277,7 @@
         if (!mdRaw.trim()) {
             previewInput.textContent = '';
         } else {
-            previewInput.textContent = mdRaw;
+            previewInput.textContent = mdRaw + dtSuffixRaw;
         }
     }
 
@@ -322,6 +364,30 @@
     });
 
     // ====================
+    // Botoes de data e hora (toggles ON/OFF)
+    // ====================
+    var btnInsertDate = document.getElementById('btn-insert-date');
+    var btnInsertTime = document.getElementById('btn-insert-time');
+    if (btnInsertDate) {
+        btnInsertDate.addEventListener('click', function(e) {
+            e.preventDefault();
+            showDateInSignature = !showDateInSignature;
+            updateDateTimeButtons();
+            updatePreview();
+            autoSave();
+        });
+    }
+    if (btnInsertTime) {
+        btnInsertTime.addEventListener('click', function(e) {
+            e.preventDefault();
+            showTimeInSignature = !showTimeInSignature;
+            updateDateTimeButtons();
+            updatePreview();
+            autoSave();
+        });
+    }
+
+    // ====================
     // Auto-save (salva signature-md + formato)
     // ====================
     function autoSave() {
@@ -348,7 +414,9 @@
                 signatureFormat: formatToSave,
                 shortcut: shortcutToSave,
                 breakCount: breakCount,
-                autoSign: autoSignEnabled
+                autoSign: autoSignEnabled,
+                showDate: showDateInSignature,
+                showTime: showTimeInSignature
             });
 
             chrome.storage.local.set({
@@ -356,7 +424,9 @@
                 signatureFormat: formatToSave,
                 shortcut: shortcutToSave,
                 breakCount: breakCount,
-                autoSign: autoSignEnabled
+                autoSign: autoSignEnabled,
+                showDate: showDateInSignature,
+                showTime: showTimeInSignature
             }).then(function() {
                 console.log('[Popup] Salvo!');
             }).catch(function(error) {
@@ -369,7 +439,7 @@
     // Load config
     // ====================
     function loadConfig() {
-        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign']).then(function(result) {
+        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign', 'showDate', 'showTime']).then(function(result) {
             console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
@@ -417,7 +487,12 @@
             autoSignCheckbox.checked = autoSignEnabled;
             toggleShortcutUI();
 
+            // Restaura toggles de data/hora
+            showDateInSignature = !!result.showDate;
+            showTimeInSignature = !!result.showTime;
+
             updateFmtButtons();
+            updateDateTimeButtons();
             updatePreview();
             updateCharCount();
         }).catch(function(error) {
