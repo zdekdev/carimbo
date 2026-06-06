@@ -250,9 +250,11 @@
             return;
         }
 
-        var campo = evento.target;
+        var target = evento.target;
+        if (!target || !target.closest) return;
 
-        if (!campo || !campo.matches(CAMPO_SELECTOR)) {
+        var campo = target.closest(CAMPO_SELECTOR);
+        if (!campo) {
             return;
         }
 
@@ -296,7 +298,12 @@
     function tentarAutoCarimbarCamposExistentes() {
         var campos = document.querySelectorAll(CAMPO_SELECTOR);
         for (var i = 0; i < campos.length; i++) {
-            tentarAutoCarimbar(campos[i]);
+            var campo = campos[i];
+            if (!campoPossuiTexto(campo)) {
+                _camposProcessados.delete(campo);
+            } else {
+                tentarAutoCarimbar(campo);
+            }
         }
     }
 
@@ -311,7 +318,12 @@
                 timeout = null;
                 var campos = document.querySelectorAll(CAMPO_SELECTOR);
                 for (var i = 0; i < campos.length; i++) {
-                    tentarAutoCarimbar(campos[i]);
+                    var campo = campos[i];
+                    if (!campoPossuiTexto(campo)) {
+                        _camposProcessados.delete(campo);
+                    } else {
+                        tentarAutoCarimbar(campo);
+                    }
                 }
             });
         });
@@ -330,9 +342,17 @@
     // ====================
     function iniciarInputListener() {
         document.body.addEventListener('input', function(event) {
-            var campo = event.target;
-            if (!campo.matches(CAMPO_SELECTOR)) return;
-            tentarAutoCarimbar(campo);
+            var target = event.target;
+            if (!target || !target.closest) return;
+            
+            var campo = target.closest(CAMPO_SELECTOR);
+            if (!campo) return;
+
+            if (!campoPossuiTexto(campo)) {
+                _camposProcessados.delete(campo);
+            } else {
+                tentarAutoCarimbar(campo);
+            }
         }, { passive: true });
     }
 
