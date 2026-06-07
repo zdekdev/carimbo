@@ -207,6 +207,13 @@
         }
 
         campo.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // Move o cursor para o final do campo após a inserção
+        // Isso evita que a primeira letra digitada vá para o final (ex: "elquim" em vez de "melqui")
+        // Usamos setTimeout para garantir que o editor do WhatsApp (Lexical) já processou os eventos
+        setTimeout(function() {
+            posicionarCursor(campo, false);
+        }, 10);
     }
 
     // ====================
