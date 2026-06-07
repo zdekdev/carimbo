@@ -320,7 +320,7 @@
     autoSignCheckbox.addEventListener('change', function() {
         autoSignEnabled = this.checked;
         toggleShortcutUI();
-        autoSave();
+        forceSaveNow();
     });
 
     // ====================
@@ -357,7 +357,7 @@
             updateFmtButtons();
             updatePreview();
             updateCharCount();
-            autoSave();
+            forceSaveNow();
         });
     });
 
@@ -372,7 +372,7 @@
             showDateInSignature = !showDateInSignature;
             updateDateTimeButtons();
             updatePreview();
-            autoSave();
+            forceSaveNow();
         });
     }
     if (btnInsertTime) {
@@ -381,56 +381,67 @@
             showTimeInSignature = !showTimeInSignature;
             updateDateTimeButtons();
             updatePreview();
-            autoSave();
+            forceSaveNow();
         });
     }
 
     // ====================
-    // Auto-save (salva signature-md + formato)
+    // Force-save: salva imediatamente no storage (sem debounce)
+    // Chamado ao fechar o popup (pagehide) e em acoes de toggle
+    // ====================
+    function forceSaveNow() {
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+        }
+
+        var breakCount = parseInt(breakCountInput.value, 10) || 2;
+        var formatToSave = currentFormats.map(function(f) { return f.fmt; });
+
+        // So salva signature-md se houver conteudo real (sem marcadores)
+        var plainContent = stripMarkdown(signatureMdInput.value).trim();
+        var sigToSave = plainContent ? signatureMdInput.value : '';
+
+        // Salva o atalho como objeto com modificadores
+        var shortcutToSave = {
+            key: normalizeKey(currentShortcut.key),
+            ctrlKey: !!currentShortcut.ctrlKey,
+            shiftKey: !!currentShortcut.shiftKey,
+            altKey: !!currentShortcut.altKey,
+            metaKey: !!currentShortcut.metaKey
+        };
+
+        console.log('[Popup] Salvando:', {
+            signature: sigToSave,
+            signatureFormat: formatToSave,
+            shortcut: shortcutToSave,
+            breakCount: breakCount,
+            autoSign: autoSignEnabled,
+            showDate: showDateInSignature,
+            showTime: showTimeInSignature
+        });
+
+        chrome.storage.local.set({
+            signature: sigToSave,
+            signatureFormat: formatToSave,
+            shortcut: shortcutToSave,
+            breakCount: breakCount,
+            autoSign: autoSignEnabled,
+            showDate: showDateInSignature,
+            showTime: showTimeInSignature
+        }).then(function() {
+            console.log('[Popup] Salvo!');
+        }).catch(function(error) {
+            console.error('[Popup] Erro ao salvar:', error);
+        });
+    }
+
+    // ====================
+    // Auto-save com debounce (para eventos de digitacao)
     // ====================
     function autoSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(function() {
-            var breakCount = parseInt(breakCountInput.value, 10) || 2;
-            var formatToSave = currentFormats.map(function(f) { return f.fmt; });
-
-            // So salva signature-md se houver conteudo real (sem marcadores)
-            var plainContent = stripMarkdown(signatureMdInput.value).trim();
-            var sigToSave = plainContent ? signatureMdInput.value : '';
-
-            // Salva o atalho como objeto com modificadores
-            var shortcutToSave = {
-                key: normalizeKey(currentShortcut.key),
-                ctrlKey: !!currentShortcut.ctrlKey,
-                shiftKey: !!currentShortcut.shiftKey,
-                altKey: !!currentShortcut.altKey,
-                metaKey: !!currentShortcut.metaKey
-            };
-
-            console.log('[Popup] Auto-salvando:', {
-                signature: sigToSave,
-                signatureFormat: formatToSave,
-                shortcut: shortcutToSave,
-                breakCount: breakCount,
-                autoSign: autoSignEnabled,
-                showDate: showDateInSignature,
-                showTime: showTimeInSignature
-            });
-
-            chrome.storage.local.set({
-                signature: sigToSave,
-                signatureFormat: formatToSave,
-                shortcut: shortcutToSave,
-                breakCount: breakCount,
-                autoSign: autoSignEnabled,
-                showDate: showDateInSignature,
-                showTime: showTimeInSignature
-            }).then(function() {
-                console.log('[Popup] Salvo!');
-            }).catch(function(error) {
-                console.error('[Popup] Erro ao salvar:', error);
-            });
-        }, 500);
+        saveTimeout = setTimeout(forceSaveNow, 300);
     }
 
     // ====================
@@ -507,7 +518,7 @@
     });
     breakCountInput.addEventListener('change', function() {
         updatePreview();
-        autoSave();
+        forceSaveNow();
     });
 
     // ====================
@@ -545,7 +556,7 @@
             shortcutBtn.classList.remove('listening');
             listening = false;
             document.removeEventListener('keydown', keyHandler, true);
-            autoSave();
+            forceSaveNow();
         }
 
         document.addEventListener('keydown', keyHandler, true);
@@ -565,7 +576,15 @@
         currentShortcut = { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
         shortcutBtn.textContent = 'Tab';
         console.log('[Popup] Atalho resetado para Tab');
-        autoSave();
+        forceSaveNow();
+    });
+
+    // ====================
+    // Salva imediatamente ao fechar o popup (antes que setTimeout seja cancelado)
+    // ====================
+    window.addEventListener('pagehide', function() {
+        console.log('[Popup] Popup fechando - salvando imediatamente...');
+        forceSaveNow();
     });
 
     // ====================
