@@ -107,7 +107,31 @@
     function carimboJaExiste(elemento) {
         if (!_config.signature) return false;
         var texto = elemento.textContent || '';
-        return texto.includes(_config.signature);
+        
+        // Pega apenas a primeira linha do texto
+        var primeiraLinha = texto.split('\n')[0] || '';
+        
+        // Extrai o texto puro da assinatura (sem os marcadores markdown)
+        var plain = _config.signature
+            .replace(/\*([^*\n]+?)\*/g, '$1')
+            .replace(/_([^_\n]+?)_/g, '$1')
+            .replace(/~([^~\n]+?)~/g, '$1')
+            .replace(/`([^`\n]+?)`/g, '$1')
+            .trim();
+            
+        if (!plain) return false;
+        
+        // Escapa o texto puro para usar na regex
+        var escapedPlain = plain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Regex para verificar se o texto puro está dentro de crases (``) na primeira linha
+        try {
+            var regex = new RegExp('`[^`]*' + escapedPlain + '[^`]*`');
+            return regex.test(primeiraLinha);
+        } catch (e) {
+            console.error('[Carimbo] Erro ao criar regex para verificar assinatura:', e);
+            return false;
+        }
     }
 
     function carimboTemConteudo() {
