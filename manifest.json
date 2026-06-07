@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Carimbo",
+  "name": "Carimbo - Assinatura Automática no WhatsApp Web",
   "version": "2.0",
   "description": "Insere seu texto de fechamento automaticamente no WhatsApp Web com tecla de atalho configurável",
   "permissions": [
