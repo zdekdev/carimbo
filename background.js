@@ -40,12 +40,24 @@ function reloadOpenWhatsAppTabs() {
     });
 }
 
+function openPopupPage() {
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html?view=page') }, (tab) => {
+        if (chrome.runtime.lastError) {
+            console.error('[Carimbo] Erro ao abrir tela de configuracao:', chrome.runtime.lastError);
+            return;
+        }
+
+        console.log('[Carimbo] Tela de configuracao aberta:', tab && tab.id);
+    });
+}
+
 // Initialize extension - set default config on first install
 chrome.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
         chrome.storage.local.set(defaultConfig)
             .then(() => {
                 console.log('[Carimbo] Configuracao padrao aplicada:', defaultConfig);
+                openPopupPage();
                 reloadOpenWhatsAppTabs();
             })
             .catch(error => {
@@ -55,6 +67,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
 
     if (details.reason === 'update') {
+        openPopupPage();
         reloadOpenWhatsAppTabs();
     }
 });

@@ -1,5 +1,7 @@
 # Carimbo
 
+**[Disponível na Chrome Web Store](https://chromewebstore.google.com/detail/kdaeafioggdmhhkefnklmbelebigpcbm?utm_source=item-share-cb)**
+
 Extensao para Chrome/Chromium que adiciona uma assinatura automatica ao campo de mensagem do WhatsApp Web.
 
 O projeto foi pensado para equipes pequenas que usam um numero compartilhado e precisam identificar rapidamente quem esta respondendo cada conversa, sem copiar e colar texto manualmente em todo atendimento.

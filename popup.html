@@ -24,6 +24,88 @@
             padding: 24px;
         }
 
+        /* Desktop / Full page mode styles */
+        @media (min-width: 768px) {
+            body {
+                width: 100%;
+                min-height: 100vh;
+                padding: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            }
+
+            .container {
+                width: 100%;
+                max-width: 480px;
+                padding: 32px;
+                border: 1px solid rgba(229, 231, 235, 0.5);
+                border-radius: 24px;
+                background: #ffffff;
+                box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            }
+
+            .header {
+                margin-bottom: 28px;
+            }
+
+            .header-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+            }
+
+            .header-icon img {
+                width: 38px;
+                height: 38px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .header p {
+                font-size: 13px;
+            }
+
+            .form-group label {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            .fmt-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 15px;
+            }
+
+            .fmt-break-input {
+                width: 42px;
+                height: 38px;
+                font-size: 14px;
+            }
+
+            .form-group input[type="text"] {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
+            .shortcut-btn {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .chat-bubble-content {
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+
+            .chat-input-sim-content {
+                font-size: 15px;
+            }
+        }
+
         .header {
             display: flex;
             align-items: center;
@@ -171,6 +253,7 @@
             font-weight: 600;
             color: #374151;
             background: #fff;
+            appearance: textfield;
             -moz-appearance: textfield;
         }
 
@@ -195,6 +278,29 @@
             outline: none;
             border-color: #22c55e;
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        /* Pulse animation for empty input */
+        @keyframes pulse-empty {
+            0% { 
+                border-color: #d1d5db; 
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); 
+                transform: scale(1);
+            }
+            50% { 
+                border-color: #22c55e; 
+                box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.3); 
+                transform: scale(1.02);
+            }
+            100% { 
+                border-color: #d1d5db; 
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); 
+                transform: scale(1);
+            }
+        }
+
+        .form-group input[type="text"]:placeholder-shown:not(:focus) {
+            animation: pulse-empty 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
         .form-hint {
