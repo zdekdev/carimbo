@@ -1,7 +1,7 @@
 // Script injetado no contexto da pagina do WhatsApp Web
 // Executa no MESMO contexto que o WhatsApp, permitindo que
 // stopImmediatePropagation() bloqueie os handlers nativos
-(function() {
+(function () {
     'use strict';
 
     var _config = {
@@ -50,7 +50,7 @@
     }
 
     // Recebe config atualizada do content script via postMessage
-    window.addEventListener('message', function(event) {
+    window.addEventListener('message', function (event) {
         if (!event.data || event.data.type !== 'CARIMBO_CONFIG') return;
         aplicarConfig(event.data);
     });
@@ -114,7 +114,7 @@
     function carimboJaExiste(elemento) {
         if (!_config.signature) return false;
         var texto = elemento.textContent || '';
-        
+
         // Extrai o texto puro da assinatura (sem os marcadores markdown)
         var plain = _config.signature
             .replace(/\*([^*\n]+?)\*/g, '$1')
@@ -122,15 +122,15 @@
             .replace(/~([^~\n]+?)~/g, '$1')
             .replace(/`([^`\n]+?)`/g, '$1')
             .trim();
-            
+
         if (!plain) return false;
-        
+
         // Removemos a verificação restrita de regex com crases (``)
         // porque o Lexical formata emojis e links de maneiras que quebram a regex,
         // ou se o usuário não usar crases na assinatura.
         var normalizedTexto = texto.replace(/\s+/g, ' ');
         var normalizedPlain = plain.replace(/\s+/g, ' ');
-        
+
         return normalizedTexto.includes(normalizedPlain);
     }
 
@@ -186,6 +186,24 @@
         return markers;
     }
 
+    function textoEhLink(texto) {
+        return /^(https?:\/\/|www\.)\S+$/i.test(texto);
+    }
+
+    function textoEhEmoji(texto) {
+        var semEspacos = texto.replace(/\s+/g, '');
+        if (!semEspacos) return false;
+
+        return /^(?:\p{Extended_Pictographic}|\p{Emoji_Presentation}|\u200d|\uFE0F)+$/u.test(semEspacos);
+    }
+
+    function deveUsarUserInserindo(campo) {
+        var texto = (campo.textContent || '').replace(/\u00A0/g, ' ').trim();
+        if (!texto) return false;
+
+        return textoEhLink(texto) || textoEhEmoji(texto);
+    }
+
     function inserirCarimbo(campo) {
         campo.focus();
 
@@ -217,19 +235,27 @@
             textoCarimbo = reWrapWithMarkers(plain + dtSuffix, textoCarimbo.trim());
         }
 
+        if (deveUsarUserInserindo(campo)) {
+            userInserindo(campo, textoCarimbo);
+        } else {
+            userDigitando(campo, textoCarimbo);
+        }
+    }
+    function userInserindo(campo, textoCarimbo) {
+        console.log("userInserindo");
         var noInicio = campoPossuiTexto(campo);
         posicionarCursor(campo, noInicio);
 
         // Como o Lexical (React) atualiza seu estado interno de seleção de forma assíncrona
         // ao ouvir o evento 'selectionchange' do navegador, precisamos esperar um pouco
         // antes de executar o comando de inserção. Caso contrário, ele inserirá na posição antiga.
-        setTimeout(function() {
+        setTimeout(function () {
             if (!document.body.contains(campo)) return;
-            
+
             // Re-foca e garante o cursor na posição correta caso tenha se perdido
             campo.focus();
             posicionarCursor(campo, noInicio);
-            
+
             document.execCommand('insertText', false, textoCarimbo);
 
             var quebras = _config.breakCount || 2;
@@ -239,10 +265,39 @@
 
             campo.dispatchEvent(new Event('input', { bubbles: true }));
 
-            setTimeout(function() {
+            setTimeout(function () {
                 posicionarCursor(campo, false);
             }, 50);
         }, 50);
+
+    }
+
+
+    function userDigitando(campo, textoCarimbo) {
+        console.log("userDigitando");
+        
+        if (campoPossuiTexto(campo)) {
+            posicionarCursor(campo, true);
+            document.execCommand('insertText', false, textoCarimbo);
+        } else {
+            posicionarCursor(campo, false);
+            document.execCommand('insertText', false, textoCarimbo);
+        }
+
+        var quebras = _config.breakCount || 2;
+        for (var i = 0; i < quebras; i++) {
+            simularShiftEnter(campo);
+        }
+
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // Move o cursor para o final do campo após a inserção
+        // Isso evita que a primeira letra digitada vá para o final (ex: "elquim" em vez de "melqui")
+        // Usamos setTimeout para garantir que o editor do WhatsApp (Lexical) já processou os eventos
+        setTimeout(function () {
+            posicionarCursor(campo, false);
+        }, 10);
+
     }
 
     // ====================
@@ -262,16 +317,16 @@
         // Formato antigo: string simples, sem modificadores
         if (typeof shortcut === 'string') {
             return normalizarTecla(evento.key) === normalizarTecla(shortcut) &&
-                   !evento.ctrlKey && !evento.shiftKey && !evento.altKey && !evento.metaKey;
+                !evento.ctrlKey && !evento.shiftKey && !evento.altKey && !evento.metaKey;
         }
 
         // Formato novo: objeto com key + modificadores
         if (typeof shortcut === 'object' && shortcut.key !== undefined) {
             return normalizarTecla(evento.key) === normalizarTecla(shortcut.key) &&
-                   !!evento.ctrlKey === !!shortcut.ctrlKey &&
-                   !!evento.shiftKey === !!shortcut.shiftKey &&
-                   !!evento.altKey === !!shortcut.altKey &&
-                   !!evento.metaKey === !!shortcut.metaKey;
+                !!evento.ctrlKey === !!shortcut.ctrlKey &&
+                !!evento.shiftKey === !!shortcut.shiftKey &&
+                !!evento.altKey === !!shortcut.altKey &&
+                !!evento.metaKey === !!shortcut.metaKey;
         }
 
         return false;
@@ -328,11 +383,11 @@
         if (!campoPossuiTexto(campo)) return;
 
         _camposProcessados.add(campo);
-        
+
         // Usamos um delay para lidar com a colagem de links ou inserção de emojis.
         // O WhatsApp (React/Lexical) processa isso de forma assíncrona, e se inserirmos o carimbo 
         // imediatamente, o conteúdo colado pode sobrescrever ou empurrar o carimbo.
-        setTimeout(function() {
+        setTimeout(function () {
             if (!document.body.contains(campo)) return;
             if (carimboJaExiste(campo)) return;
             inserirCarimbo(campo);
@@ -355,10 +410,10 @@
     function iniciarObserver() {
         var timeout = null;
 
-        var observer = new MutationObserver(function(mutations) {
+        var observer = new MutationObserver(function (mutations) {
             // Debounce: processa em batch via rAF
             if (timeout) return;
-            timeout = requestAnimationFrame(function() {
+            timeout = requestAnimationFrame(function () {
                 timeout = null;
                 var campos = document.querySelectorAll(CAMPO_SELECTOR);
                 for (var i = 0; i < campos.length; i++) {
@@ -385,10 +440,10 @@
     // para disparar o auto-insert (evita inserir ao abrir chat vazio)
     // ====================
     function iniciarInputListener() {
-        document.body.addEventListener('input', function(event) {
+        document.body.addEventListener('input', function (event) {
             var target = event.target;
             if (!target || !target.closest) return;
-            
+
             var campo = target.closest(CAMPO_SELECTOR);
             if (!campo) return;
 
