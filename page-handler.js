@@ -82,13 +82,20 @@
         var range = document.createRange();
 
         if (noInicio) {
-            var primeiroNo = encontrarPrimeiroNoTexto(elemento);
-            if (primeiroNo) {
-                range.setStart(primeiroNo, 0);
+            // Tenta encontrar o primeiro parágrafo (Lexical editor usa <p>)
+            var primeiroP = elemento.querySelector('p');
+            if (primeiroP) {
+                range.setStart(primeiroP, 0);
                 range.collapse(true);
             } else {
-                range.selectNodeContents(elemento);
-                range.collapse(true);
+                var primeiroNo = encontrarPrimeiroNoTexto(elemento);
+                if (primeiroNo) {
+                    range.setStart(primeiroNo, 0);
+                    range.collapse(true);
+                } else {
+                    range.selectNodeContents(elemento);
+                    range.collapse(true);
+                }
             }
         } else {
             range.selectNodeContents(elemento);
@@ -108,9 +115,6 @@
         if (!_config.signature) return false;
         var texto = elemento.textContent || '';
         
-        // Pega apenas a primeira linha do texto
-        var primeiraLinha = texto.split('\n')[0] || '';
-        
         // Extrai o texto puro da assinatura (sem os marcadores markdown)
         var plain = _config.signature
             .replace(/\*([^*\n]+?)\*/g, '$1')
@@ -121,17 +125,13 @@
             
         if (!plain) return false;
         
-        // Escapa o texto puro para usar na regex
-        var escapedPlain = plain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Removemos a verificação restrita de regex com crases (``)
+        // porque o Lexical formata emojis e links de maneiras que quebram a regex,
+        // ou se o usuário não usar crases na assinatura.
+        var normalizedTexto = texto.replace(/\s+/g, ' ');
+        var normalizedPlain = plain.replace(/\s+/g, ' ');
         
-        // Regex para verificar se o texto puro está dentro de crases (``) na primeira linha
-        try {
-            var regex = new RegExp('`[^`]*' + escapedPlain + '[^`]*`');
-            return regex.test(primeiraLinha);
-        } catch (e) {
-            console.error('[Carimbo] Erro ao criar regex para verificar assinatura:', e);
-            return false;
-        }
+        return normalizedTexto.includes(normalizedPlain);
     }
 
     function carimboTemConteudo() {
@@ -217,27 +217,32 @@
             textoCarimbo = reWrapWithMarkers(plain + dtSuffix, textoCarimbo.trim());
         }
 
-        if (campoPossuiTexto(campo)) {
-            posicionarCursor(campo, true);
-            document.execCommand('insertText', false, textoCarimbo);
-        } else {
-            posicionarCursor(campo, false);
-            document.execCommand('insertText', false, textoCarimbo);
-        }
+        var noInicio = campoPossuiTexto(campo);
+        posicionarCursor(campo, noInicio);
 
-        var quebras = _config.breakCount || 2;
-        for (var i = 0; i < quebras; i++) {
-            simularShiftEnter(campo);
-        }
-
-        campo.dispatchEvent(new Event('input', { bubbles: true }));
-
-        // Move o cursor para o final do campo após a inserção
-        // Isso evita que a primeira letra digitada vá para o final (ex: "elquim" em vez de "melqui")
-        // Usamos setTimeout para garantir que o editor do WhatsApp (Lexical) já processou os eventos
+        // Como o Lexical (React) atualiza seu estado interno de seleção de forma assíncrona
+        // ao ouvir o evento 'selectionchange' do navegador, precisamos esperar um pouco
+        // antes de executar o comando de inserção. Caso contrário, ele inserirá na posição antiga.
         setTimeout(function() {
-            posicionarCursor(campo, false);
-        }, 10);
+            if (!document.body.contains(campo)) return;
+            
+            // Re-foca e garante o cursor na posição correta caso tenha se perdido
+            campo.focus();
+            posicionarCursor(campo, noInicio);
+            
+            document.execCommand('insertText', false, textoCarimbo);
+
+            var quebras = _config.breakCount || 2;
+            for (var i = 0; i < quebras; i++) {
+                simularShiftEnter(campo);
+            }
+
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+
+            setTimeout(function() {
+                posicionarCursor(campo, false);
+            }, 50);
+        }, 50);
     }
 
     // ====================
@@ -323,7 +328,15 @@
         if (!campoPossuiTexto(campo)) return;
 
         _camposProcessados.add(campo);
-        inserirCarimbo(campo);
+        
+        // Usamos um delay para lidar com a colagem de links ou inserção de emojis.
+        // O WhatsApp (React/Lexical) processa isso de forma assíncrona, e se inserirmos o carimbo 
+        // imediatamente, o conteúdo colado pode sobrescrever ou empurrar o carimbo.
+        setTimeout(function() {
+            if (!document.body.contains(campo)) return;
+            if (carimboJaExiste(campo)) return;
+            inserirCarimbo(campo);
+        }, 250);
     }
 
     function tentarAutoCarimbarCamposExistentes() {
