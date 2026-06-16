@@ -93,4 +93,4 @@ Nao ha etapa de build no estado atual do projeto. Para desenvolver:
 
 ## Aviso
 
-Este projeto nao possui afiliacao oficial com a Meta ou com o WhatsApp.
+Esse projeto não tem nenhum vínculo com a Meta ou WhatsApp. Ela é gratuita e de código aberto com o compromisso com a privacidade e o não uso de dados pessoais.

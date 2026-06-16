@@ -411,7 +411,7 @@
             metaKey: !!currentShortcut.metaKey
         };
 
-        console.log('[Popup] Salvando:', {
+        /*console.log('[Popup] Salvando:', {
             signature: sigToSave,
             signatureFormat: formatToSave,
             shortcut: shortcutToSave,
@@ -419,7 +419,7 @@
             autoSign: autoSignEnabled,
             showDate: showDateInSignature,
             showTime: showTimeInSignature
-        });
+        });*/
 
         chrome.storage.local.set({
             signature: sigToSave,
@@ -430,7 +430,7 @@
             showDate: showDateInSignature,
             showTime: showTimeInSignature
         }).then(function() {
-            console.log('[Popup] Salvo!');
+            //console.log('[Popup] Salvo!');
         }).catch(function(error) {
             console.error('[Popup] Erro ao salvar:', error);
         });
@@ -449,7 +449,7 @@
     // ====================
     function loadConfig() {
         chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign', 'showDate', 'showTime']).then(function(result) {
-            console.log('[Popup] Config recuperada:', result);
+            //console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
                 signatureMdInput.value = result.signature;
@@ -529,7 +529,7 @@
         listening = true;
         shortcutBtn.classList.add('listening');
         shortcutBtn.textContent = 'Pressione uma tecla...';
-        console.log('[Popup] Aguardando tecla (modificadores suportados)...');
+        //console.log('[Popup] Aguardando tecla (modificadores suportados)...');
 
         function keyHandler(e) {
             // Ignora pressionamento apenas de teclas modificadoras
@@ -550,7 +550,7 @@
 
             currentShortcut = capturedShortcut;
             var displayKey = shortcutToString(capturedShortcut);
-            console.log('[Popup] Tecla capturada:', JSON.stringify(capturedShortcut), '(exibindo como:', displayKey + ')');
+            //console.log('[Popup] Tecla capturada:', JSON.stringify(capturedShortcut), '(exibindo como:', displayKey + ')');
 
             shortcutBtn.textContent = displayKey;
             shortcutBtn.classList.remove('listening');
@@ -567,7 +567,7 @@
                 shortcutBtn.classList.remove('listening');
                 shortcutBtn.textContent = shortcutToString(currentShortcut);
                 document.removeEventListener('keydown', keyHandler, true);
-                console.log('[Popup] Timeout - nenhuma tecla foi pressionada');
+                //console.log('[Popup] Timeout - nenhuma tecla foi pressionada');
             }
         }, 10000);
     });
@@ -575,7 +575,7 @@
     shortcutReset.addEventListener('click', function() {
         currentShortcut = { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
         shortcutBtn.textContent = 'Tab';
-        console.log('[Popup] Atalho resetado para Tab');
+        //console.log('[Popup] Atalho resetado para Tab');
         forceSaveNow();
     });
 
@@ -583,7 +583,7 @@
     // Salva imediatamente ao fechar o popup (antes que setTimeout seja cancelado)
     // ====================
     window.addEventListener('pagehide', function() {
-        console.log('[Popup] Popup fechando - salvando imediatamente...');
+        //console.log('[Popup] Popup fechando - salvando imediatamente...');
         forceSaveNow();
     });
 
@@ -591,5 +591,5 @@
     // Init
     // ====================
     loadConfig();
-    console.log('[Popup] Pronto - vanilla JS, auto-save ativo');
+    //console.log('[Popup] Pronto - vanilla JS, auto-save ativo');
 })();

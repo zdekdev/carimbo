@@ -23,13 +23,13 @@
             showDate: config.showDate,
             showTime: config.showTime
         }, '*');
-        console.log('[Carimbo] Config enviada para pagina:', config);
+        //console.log('[Carimbo] Config enviada para pagina:', config);
     }
 
     // Escuta o page-handler.js pedindo a config (resolve problema de timing)
     window.addEventListener('message', function(event) {
         if (!event.data || event.data.type !== 'CARIMBO_READY') return;
-        console.log('[Carimbo] page-handler.js esta pronto, enviando config...');
+        //console.log('[Carimbo] page-handler.js esta pronto, enviando config...');
         enviarConfigParaPagina();
     });
 
@@ -55,7 +55,7 @@
             if (result.showTime !== undefined) {
                 config.showTime = result.showTime;
             }
-            console.log('[Carimbo] Config carregada do storage:', config);
+            //console.log('[Carimbo] Config carregada do storage:', config);
             enviarConfigParaPagina();
         } catch (error) {
             console.error('[Carimbo] Erro ao carregar config:', error);
@@ -67,27 +67,27 @@
         if (namespace === 'local') {
             if (changes.signature) {
                 config.signature = changes.signature.newValue;
-                console.log('[Carimbo] Texto atualizado:', config.signature);
+                //console.log('[Carimbo] Texto atualizado:', config.signature);
             }
             if (changes.shortcut) {
                 config.shortcut = changes.shortcut.newValue;
-                console.log('[Carimbo] Atalho atualizado:', config.shortcut);
+                //console.log('[Carimbo] Atalho atualizado:', config.shortcut);
             }
             if (changes.breakCount) {
                 config.breakCount = changes.breakCount.newValue;
-                console.log('[Carimbo] Quebras de linha atualizadas:', config.breakCount);
+                //console.log('[Carimbo] Quebras de linha atualizadas:', config.breakCount);
             }
             if (changes.autoSign) {
                 config.autoSign = changes.autoSign.newValue;
-                console.log('[Carimbo] Texto automatico atualizado:', config.autoSign);
+                //console.log('[Carimbo] Texto automatico atualizado:', config.autoSign);
             }
             if (changes.showDate) {
                 config.showDate = changes.showDate.newValue;
-                console.log('[Carimbo] Exibir data atualizada:', config.showDate);
+                //console.log('[Carimbo] Exibir data atualizada:', config.showDate);
             }
             if (changes.showTime) {
                 config.showTime = changes.showTime.newValue;
-                console.log('[Carimbo] Exibir hora atualizada:', config.showTime);
+                //console.log('[Carimbo] Exibir hora atualizada:', config.showTime);
             }
             enviarConfigParaPagina();
         }
@@ -104,13 +104,13 @@
         script.id = 'carimbo-inject';
         script.src = chrome.runtime.getURL('page-handler.js');
         (document.head || document.documentElement).appendChild(script);
-        console.log('[Carimbo] Tag <script src="page-handler.js"> injetada');
+        //console.log('[Carimbo] Tag <script src="page-handler.js"> injetada');
     }
 
     injetarHandlerNaPagina();
 
     loadConfig().then(() => {
-        console.log('[Carimbo] Extensao inicializada com sucesso');
+        //console.log('[Carimbo] Extensao inicializada com sucesso');
     }).catch(err => {
         console.error('[Carimbo] Falha na inicializacao:', err);
     });

@@ -19,7 +19,7 @@ function reloadOpenWhatsAppTabs() {
         }
 
         if (!tabs || tabs.length === 0) {
-            console.log('[Carimbo] Nenhuma aba do WhatsApp aberta para recarregar.');
+            //console.log('[Carimbo] Nenhuma aba do WhatsApp aberta para recarregar.');
             return;
         }
 
@@ -34,7 +34,7 @@ function reloadOpenWhatsAppTabs() {
                     return;
                 }
 
-                console.log(`[Carimbo] Aba do WhatsApp recarregada: ${tab.id}`);
+                //console.log(`[Carimbo] Aba do WhatsApp recarregada: ${tab.id}`);
             });
         });
     });
@@ -47,7 +47,7 @@ function openPopupPage() {
             return;
         }
 
-        console.log('[Carimbo] Tela de configuracao aberta:', tab && tab.id);
+        //console.log('[Carimbo] Tela de configuracao aberta:', tab && tab.id);
     });
 }
 
@@ -56,7 +56,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
         chrome.storage.local.set(defaultConfig)
             .then(() => {
-                console.log('[Carimbo] Configuracao padrao aplicada:', defaultConfig);
+                //console.log('[Carimbo] Configuracao padrao aplicada:', defaultConfig);
                 openPopupPage();
                 reloadOpenWhatsAppTabs();
             })
@@ -66,10 +66,9 @@ chrome.runtime.onInstalled.addListener((details) => {
         return;
     }
 
-    if (details.reason === 'update') {
-        openPopupPage();
+    if (details.reason === 'update') {      
         reloadOpenWhatsAppTabs();
     }
 });
 
-console.log('[Carimbo] Service worker iniciado');
+//console.log('[Carimbo] Service worker iniciado');

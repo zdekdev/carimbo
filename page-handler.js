@@ -41,7 +41,7 @@
         if (data.showTime !== undefined) {
             _config.showTime = data.showTime;
         }
-        console.log('[Carimbo] Config aplicada:', JSON.stringify(_config));
+       //console.log('[Carimbo] Config aplicada:', JSON.stringify(_config));
 
         // Se autoSign foi ativado, tenta carimbar em campos ja visiveis (nao processados)
         if (changed && _config.autoSign && _config.signature) {
@@ -57,7 +57,7 @@
 
     // Pede a config assim que carrega (resolve o problema de timing)
     window.postMessage({ type: 'CARIMBO_READY' }, '*');
-    console.log('[Carimbo] Aguardando config do content script...');
+    //console.log.log('[Carimbo] Aguardando config do content script...');
 
     // ====================
     // Helper functions
@@ -242,7 +242,7 @@
         }
     }
     function userInserindo(campo, textoCarimbo) {
-        console.log("userInserindo");
+        //console.log("userInserindo");
         var noInicio = campoPossuiTexto(campo);
         posicionarCursor(campo, noInicio);
 
@@ -274,15 +274,8 @@
 
 
     function userDigitando(campo, textoCarimbo) {
-        console.log("userDigitando");
-        
-        if (campoPossuiTexto(campo)) {
-            posicionarCursor(campo, true);
-            document.execCommand('insertText', false, textoCarimbo);
-        } else {
-            posicionarCursor(campo, false);
-            document.execCommand('insertText', false, textoCarimbo);
-        }
+        posicionarCursor(campo, campoPossuiTexto(campo));
+        document.execCommand('insertText', false, textoCarimbo);
 
         var quebras = _config.breakCount || 2;
         for (var i = 0; i < quebras; i++) {
@@ -296,7 +289,7 @@
         // Usamos setTimeout para garantir que o editor do WhatsApp (Lexical) já processou os eventos
         setTimeout(function () {
             posicionarCursor(campo, false);
-        }, 10);
+        }, 5);
 
     }
 
@@ -432,7 +425,7 @@
             subtree: true
         });
 
-        console.log('[Carimbo] MutationObserver iniciado');
+        //console.log('[Carimbo] MutationObserver iniciado');
     }
 
     // ====================
@@ -461,5 +454,5 @@
     window.addEventListener('keydown', interceptarAtalho, true);
     iniciarObserver();
     iniciarInputListener();
-    console.log('[Carimbo] Handler injetado e ativo');
+    //console.log('[Carimbo] Handler injetado e ativo');
 })();
