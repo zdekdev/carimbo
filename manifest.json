@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Carimbo - Assinatura Automática no WhatsApp Web Business",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Ideal para microempresas com múltiplos colaboradores que precisam se identificar para os clientes no WhatsApp da empresa",
   "permissions": [
     "storage",
