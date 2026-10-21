@@ -1,18 +1,18 @@
 // Content script for Carimbo Extension
-// Gerencia a config (storage) e injeta page-handler.js no contexto da pagina
+// Gerencia a config (storage) e injeta page-handler.js no contexto da página
 (function() {
     'use strict';
 
     let config = {
         signature: '',
-        shortcut: 'Tab',
+        shortcut: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false },
         breakCount: 2,
-        autoSign: false,
+        autoSign: true,
         showDate: false,
         showTime: false
     };
 
-    // Envia config atualizada para o script injetado na pagina
+    // Envia config atualizada para o script injetado na página
     function enviarConfigParaPagina() {
         window.postMessage({
             type: 'CARIMBO_CONFIG',
@@ -23,13 +23,14 @@
             showDate: config.showDate,
             showTime: config.showTime
         }, '*');
-        //console.log('[Carimbo] Config enviada para pagina:', config);
+        //console.log('[Carimbo] Config enviada para página:', config);
     }
 
-    // Escuta o page-handler.js pedindo a config (resolve problema de timing)
+    // Escuta o page-handler.js pedindo a config (resolve o problema de sincronização)
     window.addEventListener('message', function(event) {
+        if (event.source !== window) return; // ignora mensagens de iframes/scripts de terceiros
         if (!event.data || event.data.type !== 'CARIMBO_READY') return;
-        //console.log('[Carimbo] page-handler.js esta pronto, enviando config...');
+        //console.log('[Carimbo] page-handler.js está pronto, enviando config...');
         enviarConfigParaPagina();
     });
 
@@ -62,7 +63,7 @@
         }
     }
 
-    // Atualiza config em tempo real quando o popup salva alteracoes
+    // Atualiza config em tempo real quando o popup salva alterações
     chrome.storage.onChanged.addListener((changes, namespace) => {
         if (namespace === 'local') {
             if (changes.signature) {
@@ -79,7 +80,7 @@
             }
             if (changes.autoSign) {
                 config.autoSign = changes.autoSign.newValue;
-                //console.log('[Carimbo] Texto automatico atualizado:', config.autoSign);
+                //console.log('[Carimbo] Texto automático atualizado:', config.autoSign);
             }
             if (changes.showDate) {
                 config.showDate = changes.showDate.newValue;
@@ -93,7 +94,7 @@
         }
     });
 
-    // Injeta page-handler.js via <script src="..."> no contexto da pagina
+    // Injeta page-handler.js via <script src="..."> no contexto da página
     function injetarHandlerNaPagina() {
         const existente = document.getElementById('carimbo-inject');
         if (existente) {
@@ -110,8 +111,8 @@
     injetarHandlerNaPagina();
 
     loadConfig().then(() => {
-        //console.log('[Carimbo] Extensao inicializada com sucesso');
+        //console.log('[Carimbo] Extensão inicializada com sucesso');
     }).catch(err => {
-        console.error('[Carimbo] Falha na inicializacao:', err);
+        console.error('[Carimbo] Falha na inicialização:', err);
     });
 })();
