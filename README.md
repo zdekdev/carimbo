@@ -5,6 +5,8 @@
 Extensão para Chrome/Chromium que adiciona uma assinatura automática ao campo de mensagem do WhatsApp Web.
 
 O projeto foi pensado para equipes pequenas que usam um número compartilhado e precisam identificar rapidamente quem está respondendo cada conversa, sem copiar e colar texto manualmente em todo atendimento.
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/80822b23-110c-4d30-b8f6-0df62c4a9545" />
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/b8eb1184-aa5d-49e9-a3e3-0e1deeeec7e4" />
 
 ## Recursos
 
