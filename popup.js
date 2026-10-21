@@ -31,7 +31,7 @@
             // Compatibilidade com formato antigo (string simples)
             var key = (typeof shortcut === 'string') ? shortcut : (shortcut && shortcut.key);
             if (!key) return 'Tab';
-            return key === ' ' ? 'Space' : key;
+            return key === ' ' ? IDIOMAS[idiomaAtual].teclaEspaco : key;
         }
         var parts = [];
         // Ordem padrão de modificadores: Ctrl, Alt, Shift, Meta
@@ -52,7 +52,7 @@
         if (shortcut.shiftKey) parts.push('Shift');
         var keyDisplay = shortcut.key;
         if (keyDisplay === ' ') {
-            keyDisplay = 'Space';
+            keyDisplay = IDIOMAS[idiomaAtual].teclaEspaco;
         } else if (keyDisplay.length === 1) {
             keyDisplay = keyDisplay.toUpperCase();
         }
@@ -111,6 +111,167 @@
     const breakCountInput = document.getElementById('break-count');
     const autoSignCheckbox = document.getElementById('auto-sign');
     const shortcutSection = document.getElementById('shortcut-section');
+
+    // ====================
+    // Traduções da interface do popup
+    // pt-BR é o idioma padrão; a escolha é salva na chave `language` do storage
+    // ====================
+    const IDIOMAS = {
+        'pt-BR': {
+            tituloPagina: 'Configurações - Carimbo',
+            labelFormatacao: 'Botões de Formatação',
+            labelQuebras: 'Quebras de linha',
+            titleQuebras: 'Quebras de linha após o texto',
+            titleNegrito: 'Negrito (*texto*)',
+            titleItalico: 'Itálico (_texto_)',
+            titleTachado: 'Tachado (~texto~)',
+            titleData: 'Inserir data atual (dd/mm/aa)',
+            titleHora: 'Inserir hora atual (00:00)',
+            titleQtyQuebras: 'Quantidade de quebras de linha',
+            placeholderAssinatura: 'Digite seu texto (max. 40 caracteres)',
+            sufixoCaracteres: '/40 caracteres',
+            autoInserirLabel: 'Auto inserir texto como padrão',
+            autoInserirHint: 'Insere o texto automaticamente ao abrir um chat. O atalho de teclado será desativado.',
+            labelPreviewChat: 'Pré-visualização no chat',
+            labelPreviewCampo: 'Pré-visualização no campo de digitação',
+            labelAtalho: 'Tecla de Atalho',
+            titleRestaurar: 'Restaurar padrão (Tab)',
+            hintTeclaPadrao: 'Tecla padrão: Tab',
+            hintCliqueTecla: 'Clique no botão acima e pressione a tecla desejada (ex: Tab, Enter, F2, Ctrl+I)',
+            rodapeMensagem: 'Abra o WhatsApp Web e use a tecla de atalho configurada para carimbar sua mensagem',
+            rodapeAviso: 'Aviso:',
+            rodapeAvisoCorpo: 'Esta extensão não tem nenhum vínculo com a Meta ou com o WhatsApp. É gratuita e de código aberto, com compromisso com a privacidade: nenhum dado pessoal é coletado. Visite',
+            rodapeAvisoLink: 'o repositório no GitHub',
+            rodapeAvisoFim: 'para mais informações.',
+            seletorIdiomaTitle: 'Idioma da interface',
+            placeholderVazioChat: 'Seu texto aparecerá aqui',
+            placeholderVazioCampo: 'Digite uma mensagem',
+            simMensagem: 'Bom dia! Segue o relatório solicitado.',
+            pressioneTecla: 'Pressione uma tecla...',
+            teclaEspaco: 'Espaço'
+        },
+        'en': {
+            tituloPagina: 'Settings - Carimbo',
+            labelFormatacao: 'Formatting Buttons',
+            labelQuebras: 'Line breaks',
+            titleQuebras: 'Line breaks after the text',
+            titleNegrito: 'Bold (*text*)',
+            titleItalico: 'Italic (_text_)',
+            titleTachado: 'Strikethrough (~text~)',
+            titleData: 'Insert current date (dd/mm/yy)',
+            titleHora: 'Insert current time (00:00)',
+            titleQtyQuebras: 'Number of line breaks',
+            placeholderAssinatura: 'Type your text (max. 40 characters)',
+            sufixoCaracteres: '/40 characters',
+            autoInserirLabel: 'Auto-insert text by default',
+            autoInserirHint: 'Inserts the text automatically when opening a chat. The keyboard shortcut will be disabled.',
+            labelPreviewChat: 'Preview in chat',
+            labelPreviewCampo: 'Preview in the typing field',
+            labelAtalho: 'Shortcut Key',
+            titleRestaurar: 'Restore default (Tab)',
+            hintTeclaPadrao: 'Default key: Tab',
+            hintCliqueTecla: 'Click the button above and press the desired key (e.g.: Tab, Enter, F2, Ctrl+I)',
+            rodapeMensagem: 'Open WhatsApp Web and use the configured shortcut key to stamp your message',
+            rodapeAviso: 'Notice:',
+            rodapeAvisoCorpo: 'This extension has no affiliation with Meta or WhatsApp. It is free and open source, committed to privacy: no personal data is collected. Visit',
+            rodapeAvisoLink: 'the GitHub repository',
+            rodapeAvisoFim: 'for more information.',
+            seletorIdiomaTitle: 'Interface language',
+            placeholderVazioChat: 'Your text will appear here',
+            placeholderVazioCampo: 'Type a message',
+            simMensagem: 'Good morning! Here is the requested report.',
+            pressioneTecla: 'Press a key...',
+            teclaEspaco: 'Space'
+        },
+        'es': {
+            tituloPagina: 'Configuración - Carimbo',
+            labelFormatacao: 'Botones de formato',
+            labelQuebras: 'Saltos de línea',
+            titleQuebras: 'Saltos de línea después del texto',
+            titleNegrito: 'Negrita (*texto*)',
+            titleItalico: 'Cursiva (_texto_)',
+            titleTachado: 'Tachado (~texto~)',
+            titleData: 'Insertar fecha actual (dd/mm/aa)',
+            titleHora: 'Insertar hora actual (00:00)',
+            titleQtyQuebras: 'Cantidad de saltos de línea',
+            placeholderAssinatura: 'Escribe tu texto (máx. 40 caracteres)',
+            sufixoCaracteres: '/40 caracteres',
+            autoInserirLabel: 'Insertar texto automáticamente por defecto',
+            autoInserirHint: 'Inserta el texto automáticamente al abrir un chat. El atajo de teclado se desactivará.',
+            labelPreviewChat: 'Vista previa en el chat',
+            labelPreviewCampo: 'Vista previa en el campo de escritura',
+            labelAtalho: 'Tecla de atajo',
+            titleRestaurar: 'Restaurar predeterminado (Tab)',
+            hintTeclaPadrao: 'Tecla predeterminada: Tab',
+            hintCliqueTecla: 'Haz clic en el botón de arriba y presiona la tecla deseada (ej: Tab, Enter, F2, Ctrl+I)',
+            rodapeMensagem: 'Abre WhatsApp Web y usa la tecla de atajo configurada para sellar tu mensaje',
+            rodapeAviso: 'Aviso:',
+            rodapeAvisoCorpo: 'Esta extensión no tiene ningún vínculo con Meta ni con WhatsApp. Es gratuita y de código abierto, con compromiso con la privacidad: no se recopilan datos personales. Visita',
+            rodapeAvisoLink: 'el repositorio en GitHub',
+            rodapeAvisoFim: 'para más información.',
+            seletorIdiomaTitle: 'Idioma de la interfaz',
+            placeholderVazioChat: 'Tu texto aparecerá aquí',
+            placeholderVazioCampo: 'Escribe un mensaje',
+            simMensagem: 'Buenos días! Aquí está el informe solicitado.',
+            pressioneTecla: 'Presiona una tecla...',
+            teclaEspaco: 'Espacio'
+        }
+    };
+
+    let idiomaAtual = 'pt-BR';
+
+    // ====================
+    // Aplica o dicionário do idioma nos textos fixos da interface.
+    // Textos movidos para o JS (title da página, pseudo-elementos CSS e preview)
+    // também são atualizados aqui
+    // ====================
+    function aplicarIdioma(lang) {
+        if (!IDIOMAS[lang]) {
+            lang = 'pt-BR';
+        }
+        idiomaAtual = lang;
+
+        var dict = IDIOMAS[idiomaAtual];
+
+        document.title = dict.tituloPagina;
+        document.documentElement.lang = idiomaAtual;
+
+        var nos = document.querySelectorAll('[data-i18n]');
+        for (var i = 0; i < nos.length; i++) {
+            var chave = nos[i].getAttribute('data-i18n');
+            if (dict[chave] !== undefined) {
+                nos[i].textContent = dict[chave];
+            }
+        }
+
+        var nosTitulo = document.querySelectorAll('[data-i18n-title]');
+        for (var j = 0; j < nosTitulo.length; j++) {
+            var chaveTitulo = nosTitulo[j].getAttribute('data-i18n-title');
+            if (dict[chaveTitulo] !== undefined) {
+                nosTitulo[j].setAttribute('title', dict[chaveTitulo]);
+            }
+        }
+
+        var nosPlaceholder = document.querySelectorAll('[data-i18n-placeholder]');
+        for (var k = 0; k < nosPlaceholder.length; k++) {
+            var chavePlaceholder = nosPlaceholder[k].getAttribute('data-i18n-placeholder');
+            if (dict[chavePlaceholder] !== undefined) {
+                nosPlaceholder[k].setAttribute('placeholder', dict[chavePlaceholder]);
+            }
+        }
+
+        // Textos usados pelos pseudo-elementos :empty::after definidos no CSS
+        document.documentElement.style.setProperty('--msg-vazio-chat', dict.placeholderVazioChat);
+        document.documentElement.style.setProperty('--msg-vazio-campo', dict.placeholderVazioCampo);
+
+        var seletor = document.getElementById('idioma');
+        if (seletor && seletor.value !== idiomaAtual) {
+            seletor.value = idiomaAtual;
+        }
+
+        // Re-renderiza a pré-visualização com o texto de exemplo no idioma atual
+        updatePreview();
+    }
 
     // Marcadores por tipo de formatacao
     const formatDefs = {
@@ -273,7 +434,7 @@
         // Com 0 quebras, um espaço separa o carimbo da mensagem (igual ao comportamento no chat)
         var sufixoEspaco = breakCount === 0 ? ' ' : '';
 
-        var simulatedMsg = '<div style="border: none;margin-bottom:6px;font-size:13px;color:#111b21;line-height:1.4;word-break:break-word;position:relative">Bom dia! Segue o relatório solicitado.</div>';
+        var simulatedMsg = '<div style="border: none;margin-bottom:6px;font-size:13px;color:#111b21;line-height:1.4;word-break:break-word;position:relative">' + IDIOMAS[idiomaAtual].simMensagem + '</div>';
         if (!fullMd) {
             previewChat.innerHTML = simulatedMsg;
         } else {
@@ -443,7 +604,8 @@
             breakCount: breakCount,
             autoSign: autoSignEnabled,
             showDate: showDateInSignature,
-            showTime: showTimeInSignature
+            showTime: showTimeInSignature,
+            language: idiomaAtual
         }).then(function() {
             //console.log('[Popup] Salvo!');
         }).catch(function(error) {
@@ -463,7 +625,10 @@
     // Load config
     // ====================
     function loadConfig() {
-        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign', 'showDate', 'showTime']).then(function(result) {
+        chrome.storage.local.get(['signature', 'signatureFormat', 'shortcut', 'breakCount', 'autoSign', 'showDate', 'showTime', 'language']).then(function(result) {
+            // Aplica o idioma escolhido antes de montar a interface
+            aplicarIdioma(IDIOMAS[result.language] ? result.language : 'pt-BR');
+
             //console.log('[Popup] Config recuperada:', result);
 
             if (result.signature) {
@@ -545,7 +710,7 @@
         if (listening) return;
         listening = true;
         shortcutBtn.classList.add('listening');
-        shortcutBtn.textContent = 'Pressione uma tecla...';
+        shortcutBtn.textContent = IDIOMAS[idiomaAtual].pressioneTecla;
         //console.log('[Popup] Aguardando tecla (modificadores suportados)...');
 
         function keyHandler(e) {
@@ -603,6 +768,19 @@
         //console.log('[Popup] Popup fechando - salvando imediatamente...');
         forceSaveNow();
     });
+
+    // ====================
+    // Seletor de idioma: aplica e salva a escolha imediatamente
+    // ====================
+    var idiomaSelect = document.getElementById('idioma');
+    if (idiomaSelect) {
+        idiomaSelect.addEventListener('change', function() {
+            aplicarIdioma(this.value);
+            chrome.storage.local.set({ language: idiomaAtual }).catch(function(error) {
+                console.error('[Popup] Erro ao salvar idioma:', error);
+            });
+        });
+    }
 
     // ====================
     // Init

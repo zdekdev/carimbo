@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuracoes - Carimbo</title>
+    <title>Configurações - Carimbo</title>
     <style>
         * {
             margin: 0;
@@ -137,6 +137,23 @@
         .header p {
             font-size: 11px;
             color: #6b7280;
+        }
+
+        .titulo-linha {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .idioma-select {
+            font-size: 11px;
+            padding: 2px 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            color: #374151;
+            cursor: pointer;
+            max-width: 132px;
         }
 
         .form-group {
@@ -425,7 +442,7 @@
         }
 
         .chat-bubble-content:empty::after {
-            content: 'Seu texto aparecera aqui';
+            content: var(--msg-vazio-chat, 'Seu texto aparecerá aqui');
             color: #8696a0;
             font-style: italic;
         }
@@ -470,7 +487,7 @@
         }
 
         .chat-input-sim-content:empty::after {
-            content: 'Digite uma mensagem';
+            content: var(--msg-vazio-campo, 'Digite uma mensagem');
             color: #8696a0;
             font-style: italic;
         }
@@ -522,7 +539,15 @@
              
             </div>
             <div>
-                <h1>Carimbo <span style="font-size: 12px; color: #8696a0; font-weight: 600;">Versão 2.3.1</span></h1>
+                <div class="titulo-linha">
+                    <h1>Carimbo <span style="font-size: 12px; color: #8696a0; font-weight: 600;">Versão 2.3.1</span></h1>
+                    <select id="idioma" class="idioma-select" title="Idioma da interface"
+                        data-i18n-title="seletorIdiomaTitle">
+                        <option value="pt-BR" selected>Português (BR)</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
                 <p>WhatsApp Web</p>
             </div>
         </div>
@@ -532,16 +557,17 @@
             <!-- Signature Input -->
             <div class="form-group">
                 <div class="fmt-break-label-container">
-                    <label for="signature">Botões de Formatação</label>
-                    <label class="fmt-break-label" title="Quebras de linha após o texto">Quebras de linha</label>
+                    <label for="signature" data-i18n="labelFormatacao">Botões de Formatação</label>
+                    <label class="fmt-break-label" title="Quebras de linha após o texto" data-i18n-title="titleQuebras"
+                        data-i18n="labelQuebras">Quebras de linha</label>
                 </div>
 
                 <!-- Formatting toolbar -->
                 <div class="fmt-toolbar">
-                    <button type="button" class="fmt-btn bold" data-fmt="bold" title="Negrito (*texto*)">B</button>
-                    <button type="button" class="fmt-btn italic" data-fmt="italic" title="Itálico (_texto_)">I</button>
-                    <button type="button" class="fmt-btn" data-fmt="strikethrough" title="Tachado (~texto~)">S</button>
-                    <button type="button" class="fmt-btn fmt-btn-date" id="btn-insert-date" title="Inserir data atual (dd/mm/aa)">
+                    <button type="button" class="fmt-btn bold" data-fmt="bold" title="Negrito (*texto*)" data-i18n-title="titleNegrito">B</button>
+                    <button type="button" class="fmt-btn italic" data-fmt="italic" title="Itálico (_texto_)" data-i18n-title="titleItalico">I</button>
+                    <button type="button" class="fmt-btn" data-fmt="strikethrough" title="Tachado (~texto~)" data-i18n-title="titleTachado">S</button>
+                    <button type="button" class="fmt-btn fmt-btn-date" id="btn-insert-date" title="Inserir data atual (dd/mm/aa)" data-i18n-title="titleData">
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -549,7 +575,7 @@
                             <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
                     </button>
-                    <button type="button" class="fmt-btn fmt-btn-time" id="btn-insert-time" title="Inserir hora atual (00:00)">
+                    <button type="button" class="fmt-btn fmt-btn-time" id="btn-insert-time" title="Inserir hora atual (00:00)" data-i18n-title="titleHora">
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12 6 12 12 16 14"/>
@@ -557,28 +583,29 @@
                     </button>
                     <div class="fmt-break-group">
                         <input type="number" id="break-count" class="fmt-break-input" value="2" min="0" max="10"
-                            title="Quantidade de quebras de linha">
+                            title="Quantidade de quebras de linha" data-i18n-title="titleQtyQuebras">
                     </div>
                 </div>
                 <input type="text" id="signature" maxlength="40"
-                    placeholder="Digite seu texto (max. 40 caracteres)" autocomplete="off">
+                    placeholder="Digite seu texto (max. 40 caracteres)" autocomplete="off"
+                    data-i18n-placeholder="placeholderAssinatura">
                 <input type="hidden" id="signature-md">
-                <p class="form-hint"><span id="char-count">0</span>/40 caracteres</p>
+                <p class="form-hint"><span id="char-count">0</span><span data-i18n="sufixoCaracteres">/40 caracteres</span></p>
 
                 <!-- Auto-signature toggle -->
                 <div class="auto-sign-row">
                     <label class="auto-sign-label" for="auto-sign">
                         <input type="checkbox" id="auto-sign" checked>
-                        <span>Auto inserir texto como padrão</span>
+                        <span data-i18n="autoInserirLabel">Auto inserir texto como padrão</span>
                     </label>
-                    <p class="form-hint">Insere o texto automaticamente ao abrir um chat. O atalho de teclado será
+                    <p class="form-hint" data-i18n="autoInserirHint">Insere o texto automaticamente ao abrir um chat. O atalho de teclado será
                         desativado.</p>
                 </div>
             </div>
 
             <!-- Preview: Chat (formatado) -->
             <div class="preview-box form-group">
-                <label>Pré-visualização no chat</label>
+                <label data-i18n="labelPreviewChat">Pré-visualização no chat</label>
                 <div class="chat-bubble">
                     <div id="preview-chat" class="chat-bubble-content"></div>
                 </div>
@@ -586,7 +613,7 @@
 
             <!-- Preview: Campo de digitacao -->
             <div class="preview-box form-group">
-                <label>Pré-visualização no campo de digitação</label>
+                <label data-i18n="labelPreviewCampo">Pré-visualização no campo de digitação</label>
                 <div class="chat-input-sim">
                     <div id="preview-input" class="chat-input-sim-content"></div>
                 </div>
@@ -594,10 +621,11 @@
 
             <!-- Shortcut Key -->
             <div class="form-group" id="shortcut-section">
-                <label>Tecla de Atalho</label>
+                <label data-i18n="labelAtalho">Tecla de Atalho</label>
                 <div class="shortcut-row">
                     <button type="button" id="shortcut-btn" class="shortcut-btn">Tab</button>
-                    <button type="button" id="shortcut-reset" class="shortcut-reset" title="Restaurar padrão (Tab)">
+                    <button type="button" id="shortcut-reset" class="shortcut-reset" title="Restaurar padrão (Tab)"
+                        data-i18n-title="titleRestaurar">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
@@ -605,17 +633,19 @@
                         </svg>
                     </button>
                 </div>
-                <p class="form-hint">Tecla padrão: Tab</p>
-                <p class="form-hint">Clique no botão acima e pressione a tecla desejada (ex: Tab, Enter, F2, Ctrl+I)</p>
+                <p class="form-hint" data-i18n="hintTeclaPadrao">Tecla padrão: Tab</p>
+                <p class="form-hint" data-i18n="hintCliqueTecla">Clique no botão acima e pressione a tecla desejada (ex: Tab, Enter, F2, Ctrl+I)</p>
             </div>
 
         </form>
 
         <!-- Footer -->
         <div class="footer">
-            Abra o WhatsApp Web e use a tecla de atalho configurada para carimbar sua mensagem <br><br>
-            <strong>Aviso:</strong> Esta extensão não tem nenhum vínculo com a Meta ou com o WhatsApp. É gratuita e de código aberto, com compromisso com a privacidade: nenhum dado pessoal é coletado. Visite <a href="https://github.com/zdekdev/carimbo" target="_blank">o repositório no GitHub</a> para mais informações.
-           
+            <span data-i18n="rodapeMensagem">Abra o WhatsApp Web e use a tecla de atalho configurada para carimbar sua mensagem</span> <br><br>
+            <strong data-i18n="rodapeAviso">Aviso:</strong>
+            <span data-i18n="rodapeAvisoCorpo">Esta extensão não tem nenhum vínculo com a Meta ou com o WhatsApp. É gratuita e de código aberto, com compromisso com a privacidade: nenhum dado pessoal é coletado. Visite</span>
+            <a href="https://github.com/zdekdev/carimbo" target="_blank"><span data-i18n="rodapeAvisoLink">o repositório no GitHub</span></a>
+            <span data-i18n="rodapeAvisoFim">para mais informações.</span>
         </div>
     </div>
 

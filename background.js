@@ -8,7 +8,8 @@ const defaultConfig = {
     breakCount: 2,
     autoSign: true,
     showDate: false,
-    showTime: false
+    showTime: false,
+    language: 'pt-BR'
 };
 
 // Recarrega as abas abertas do WhatsApp.
