@@ -22,8 +22,9 @@
     var _assinaturaPuraNormalizada = '';
 
     // Atrasos (ms) para lidar com o editor Lexical, que processa eventos de forma assíncrona
-    var ATRASO_INSERCAO = 50;     // inserção do carimbo e reposicionamento do cursor
-    var ATRASO_POS_COLAGEM = 250; // auto-carimbo: aguarda a colagem de links/emojis
+    var ATRASO_INSERCAO = 50;     // espera a seleção estabilizar antes de inserir e reposicionar o cursor
+    var ATRASO_DIGITACAO = 60;    // auto-carimbo por digitação: carimbo aparece quase imediatamente
+    var ATRASO_POS_COLAGEM = 250; // colagem/arrasto, links e emojis: aguarda o Lexical processar o conteúdo
 
     // Seletor do campo de chat do WhatsApp
     var CAMPO_SELECTOR = 'div[contenteditable="true"][data-tab="10"], div[data-lexical-editor="true"]';
@@ -366,7 +367,7 @@
     // ====================
     // Auto-insert: carimba automaticamente ao abrir chat
     // ====================
-    function tentarAutoCarimbar(campo) {
+    function tentarAutoCarimbar(campo, atraso) {
         if (!_config.autoSign) return;
         if (!carimboTemConteudo()) return;
         if (_camposProcessados.has(campo)) return;
@@ -393,7 +394,7 @@
 
             if (carimboJaExiste(campo)) return;
             inserirCarimbo(campo);
-        }, ATRASO_POS_COLAGEM);
+        }, atraso || ATRASO_POS_COLAGEM);
     }
 
     function tentarAutoCarimbarCamposExistentes() {
@@ -451,17 +452,19 @@
 
             // Colagem/arrastar substituindo o conteúdo pode ter removido o carimbo:
             // libera o campo para ser recarimbado (o evento paste em si é interceptado
-            // pelo Lexical e não chega até nós, mas o input gerado por ele chega).
-            // A verificação carimboJaExiste em tentarAutoCarimbar continua evitando
-            // duplicar o carimbo quando ele ainda está presente no texto
-            if (event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop') {
+            // pelo Lexical e não chega até nós, mas o input gerado por ele chega)
+            var ehColagem = event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop';
+            if (ehColagem) {
                 _camposProcessados.delete(campo);
             }
 
             if (!campoPossuiTexto(campo)) {
                 _camposProcessados.delete(campo);
             } else {
-                tentarAutoCarimbar(campo);
+                // Digitação é carimbada quase imediatamente; colagem/arrasto e campos
+                // com link/emoji mantêm o atraso maior, pois o Lexical precisa processar
+                // esse conteúdo antes de o carimbo ser inserido com segurança
+                tentarAutoCarimbar(campo, ehColagem || deveUsarUserInserindo(campo) ? ATRASO_POS_COLAGEM : ATRASO_DIGITACAO);
             }
         }, { passive: true });
     }
