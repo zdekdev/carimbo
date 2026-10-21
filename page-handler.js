@@ -6,23 +6,33 @@
 
     var _config = {
         signature: '',
-        shortcut: 'Tab',
+        shortcut: { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false },
         breakCount: 2,
-        autoSign: false,
+        autoSign: true,
         showDate: false,
         showTime: false
     };
 
-    // Rastreia elementos onde o carimbo ja foi inserido automaticamente
+    // Rastreia elementos onde o carimbo já foi inserido automaticamente
     var _camposProcessados = new WeakSet();
 
-    // Selector do campo de chat do WhatsApp
+    // Cache do texto puro da assinatura (sem marcadores markdown), calculado
+    // apenas quando a config muda, para evitar reprocessar regex a cada verificação
+    var _assinaturaPura = '';
+    var _assinaturaPuraNormalizada = '';
+
+    // Atrasos (ms) para lidar com o editor Lexical, que processa eventos de forma assíncrona
+    var ATRASO_INSERCAO = 50;     // inserção do carimbo e reposicionamento do cursor
+    var ATRASO_POS_COLAGEM = 250; // auto-carimbo: aguarda a colagem de links/emojis
+
+    // Seletor do campo de chat do WhatsApp
     var CAMPO_SELECTOR = 'div[contenteditable="true"][data-tab="10"], div[data-lexical-editor="true"]';
 
     function aplicarConfig(data) {
         var changed = false;
         if (data.signature !== undefined && _config.signature !== data.signature) {
             _config.signature = data.signature;
+            atualizarCacheAssinatura();
             changed = true;
         }
         if (data.shortcut !== undefined) {
@@ -43,7 +53,7 @@
         }
        //console.log('[Carimbo] Config aplicada:', JSON.stringify(_config));
 
-        // Se autoSign foi ativado, tenta carimbar em campos ja visiveis (nao processados)
+        // Se autoSign foi ativado, tenta carimbar em campos já visíveis (não processados)
         if (changed && _config.autoSign && _config.signature) {
             tentarAutoCarimbarCamposExistentes();
         }
@@ -51,17 +61,41 @@
 
     // Recebe config atualizada do content script via postMessage
     window.addEventListener('message', function (event) {
+        if (event.source !== window) return; // ignora mensagens de iframes/scripts de terceiros
         if (!event.data || event.data.type !== 'CARIMBO_CONFIG') return;
         aplicarConfig(event.data);
     });
 
-    // Pede a config assim que carrega (resolve o problema de timing)
+    // Pede a config assim que carrega (resolve o problema de sincronização)
     window.postMessage({ type: 'CARIMBO_READY' }, '*');
-    //console.log.log('[Carimbo] Aguardando config do content script...');
+    //console.log('[Carimbo] Aguardando config do content script...');
 
     // ====================
     // Helper functions
     // ====================
+
+    // Remove os marcadores markdown do WhatsApp e devolve o texto puro
+    function extrairTextoPuro(md) {
+        return md
+            .replace(/\*([^*\n]+?)\*/g, '$1')
+            .replace(/_([^_\n]+?)_/g, '$1')
+            .replace(/~([^~\n]+?)~/g, '$1')
+            .replace(/`([^`\n]+?)`/g, '$1')
+            .trim();
+    }
+
+    // Recalcula o cache do texto puro da assinatura
+    function atualizarCacheAssinatura() {
+        _assinaturaPura = extrairTextoPuro(_config.signature);
+        _assinaturaPuraNormalizada = _assinaturaPura.replace(/\s+/g, ' ');
+    }
+
+    // Quantidade de quebras de linha (0 é um valor válido; padrão: 2)
+    function obterQuebras() {
+        var quebras = _config.breakCount;
+        return (typeof quebras === 'number' && quebras >= 0) ? quebras : 2;
+    }
+
     function encontrarPrimeiroNoTexto(elemento) {
         var walker = document.createTreeWalker(
             elemento,
@@ -112,37 +146,18 @@
     }
 
     function carimboJaExiste(elemento) {
-        if (!_config.signature) return false;
-        var texto = elemento.textContent || '';
-
-        // Extrai o texto puro da assinatura (sem os marcadores markdown)
-        var plain = _config.signature
-            .replace(/\*([^*\n]+?)\*/g, '$1')
-            .replace(/_([^_\n]+?)_/g, '$1')
-            .replace(/~([^~\n]+?)~/g, '$1')
-            .replace(/`([^`\n]+?)`/g, '$1')
-            .trim();
-
-        if (!plain) return false;
+        if (!_assinaturaPura) return false;
 
         // Removemos a verificação restrita de regex com crases (``)
         // porque o Lexical formata emojis e links de maneiras que quebram a regex,
         // ou se o usuário não usar crases na assinatura.
-        var normalizedTexto = texto.replace(/\s+/g, ' ');
-        var normalizedPlain = plain.replace(/\s+/g, ' ');
+        var texto = (elemento.textContent || '').replace(/\s+/g, ' ');
 
-        return normalizedTexto.includes(normalizedPlain);
+        return texto.includes(_assinaturaPuraNormalizada);
     }
 
     function carimboTemConteudo() {
-        if (!_config.signature) return false;
-        var plain = _config.signature
-            .replace(/\*([^*\n]+?)\*/g, '$1')
-            .replace(/_([^_\n]+?)_/g, '$1')
-            .replace(/~([^~\n]+?)~/g, '$1')
-            .replace(/`([^`\n]+?)`/g, '$1')
-            .trim();
-        return plain.length > 0;
+        return _assinaturaPura.length > 0;
     }
 
     function simularShiftEnter(elemento) {
@@ -210,29 +225,23 @@
         // Monta texto do carimbo com data/hora se ativados
         var textoCarimbo = _config.signature;
         var dtParts = [];
-        if (_config.showDate) {
-            var now = new Date();
-            var day = String(now.getDate()).padStart(2, '0');
-            var month = String(now.getMonth() + 1).padStart(2, '0');
-            var year = now.getFullYear();
-            dtParts.push(day + '/' + month + '/' + String(year).slice(-2));
-        }
-        if (_config.showTime) {
-            var now2 = new Date();
-            var hours = String(now2.getHours()).padStart(2, '0');
-            var minutes = String(now2.getMinutes()).padStart(2, '0');
-            dtParts.push(hours + ':' + minutes);
+        if (_config.showDate || _config.showTime) {
+            var agora = new Date();
+            if (_config.showDate) {
+                var day = String(agora.getDate()).padStart(2, '0');
+                var month = String(agora.getMonth() + 1).padStart(2, '0');
+                dtParts.push(day + '/' + month + '/' + String(agora.getFullYear()).slice(-2));
+            }
+            if (_config.showTime) {
+                var hours = String(agora.getHours()).padStart(2, '0');
+                var minutes = String(agora.getMinutes()).padStart(2, '0');
+                dtParts.push(hours + ':' + minutes);
+            }
         }
         if (dtParts.length > 0 && textoCarimbo) {
-            // Extrai texto puro, anexa data/hora, re-aplica os mesmos marcadores
-            var plain = textoCarimbo
-                .replace(/\*([^*\n]+?)\*/g, '$1')
-                .replace(/_([^_\n]+?)_/g, '$1')
-                .replace(/~([^~\n]+?)~/g, '$1')
-                .replace(/`([^`\n]+?)`/g, '$1')
-                .trim();
+            // Anexa data/hora ao texto puro (em cache) e re-aplica os mesmos marcadores
             var dtSuffix = ' ' + dtParts.join(' ');
-            textoCarimbo = reWrapWithMarkers(plain + dtSuffix, textoCarimbo.trim());
+            textoCarimbo = reWrapWithMarkers(_assinaturaPura + dtSuffix, textoCarimbo.trim());
         }
 
         if (deveUsarUserInserindo(campo)) {
@@ -241,14 +250,13 @@
             userDigitando(campo, textoCarimbo);
         }
     }
-    function userInserindo(campo, textoCarimbo) {
-        //console.log("userInserindo");
-        var noInicio = campoPossuiTexto(campo);
+    // Núcleo comum de inserção usado pelas duas estratégias (userDigitando/userInserindo).
+    // O atraso é necessário porque o Lexical (React) atualiza seu estado interno de seleção
+    // de forma assíncrona, ao ouvir o evento 'selectionchange' do navegador. Sem ele, o
+    // comando pode inserir na posição antiga de forma intermitente.
+    function inserirTextoNoCampo(campo, textoCarimbo, noInicio) {
         posicionarCursor(campo, noInicio);
 
-        // Como o Lexical (React) atualiza seu estado interno de seleção de forma assíncrona
-        // ao ouvir o evento 'selectionchange' do navegador, precisamos esperar um pouco
-        // antes de executar o comando de inserção. Caso contrário, ele inserirá na posição antiga.
         setTimeout(function () {
             if (!document.body.contains(campo)) return;
 
@@ -256,45 +264,38 @@
             campo.focus();
             posicionarCursor(campo, noInicio);
 
-            document.execCommand('insertText', false, textoCarimbo);
+            // Com 0 quebras de linha, o espaço é inserido no MESMO comando do carimbo:
+            // sem ele, o texto fica colado (ex: "melqui`texto") e a formatação não pega;
+            // em um comando separado, o editor pode perder o espaço de forma intermitente
+            var quebras = obterQuebras();
+            var espacoFinal = quebras === 0 ? ' ' : '';
 
-            var quebras = _config.breakCount || 2;
+            document.execCommand('insertText', false, textoCarimbo + espacoFinal);
+
             for (var i = 0; i < quebras; i++) {
                 simularShiftEnter(campo);
             }
 
             campo.dispatchEvent(new Event('input', { bubbles: true }));
 
+            // Move o cursor para o final do campo após a inserção
+            // Isso evita que a primeira letra digitada vá para o final (ex: "elquim" em vez de "melqui")
             setTimeout(function () {
                 posicionarCursor(campo, false);
-            }, 50);
-        }, 50);
-
+            }, ATRASO_INSERCAO);
+        }, ATRASO_INSERCAO);
     }
 
+    function userInserindo(campo, textoCarimbo) {
+        inserirTextoNoCampo(campo, textoCarimbo, campoPossuiTexto(campo));
+    }
 
     function userDigitando(campo, textoCarimbo) {
-        posicionarCursor(campo, campoPossuiTexto(campo));
-        document.execCommand('insertText', false, textoCarimbo);
-
-        var quebras = _config.breakCount || 2;
-        for (var i = 0; i < quebras; i++) {
-            simularShiftEnter(campo);
-        }
-
-        campo.dispatchEvent(new Event('input', { bubbles: true }));
-
-        // Move o cursor para o final do campo após a inserção
-        // Isso evita que a primeira letra digitada vá para o final (ex: "elquim" em vez de "melqui")
-        // Usamos setTimeout para garantir que o editor do WhatsApp (Lexical) já processou os eventos
-        setTimeout(function () {
-            posicionarCursor(campo, false);
-        }, 5);
-
+        inserirTextoNoCampo(campo, textoCarimbo, campoPossuiTexto(campo));
     }
 
     // ====================
-    // Normaliza o valor da tecla para comparacao consistente
+    // Normaliza o valor da tecla para comparação consistente
     // ====================
     function normalizarTecla(key) {
         if (!key) return '';
@@ -329,8 +330,17 @@
     // Intercepta atalho manual (BLOQUEADO se autoSign ativo)
     // ====================
     function interceptarAtalho(evento) {
-        // Se autoSign esta ativo, nao permite insercao manual via atalho
+        // Se autoSign está ativo, não permite inserção manual via atalho
         if (_config.autoSign) {
+            return;
+        }
+
+        // Compara o atalho antes de consultar o DOM (a verificação mais barata roda primeiro)
+        if (!atalhoCorresponde(evento, _config.shortcut)) {
+            return;
+        }
+
+        if (!carimboTemConteudo()) {
             return;
         }
 
@@ -339,14 +349,6 @@
 
         var campo = target.closest(CAMPO_SELECTOR);
         if (!campo) {
-            return;
-        }
-
-        if (!atalhoCorresponde(evento, _config.shortcut)) {
-            return;
-        }
-
-        if (!carimboTemConteudo()) {
             return;
         }
 
@@ -372,19 +374,26 @@
             _camposProcessados.add(campo);
             return;
         }
-        // So insere se o usuario ja digitou algo no campo
+        // Só insere se o usuário já digitou algo no campo
         if (!campoPossuiTexto(campo)) return;
 
         _camposProcessados.add(campo);
 
         // Usamos um delay para lidar com a colagem de links ou inserção de emojis.
-        // O WhatsApp (React/Lexical) processa isso de forma assíncrona, e se inserirmos o carimbo 
+        // O WhatsApp (React/Lexical) processa isso de forma assíncrona, e se inserirmos o carimbo
         // imediatamente, o conteúdo colado pode sobrescrever ou empurrar o carimbo.
         setTimeout(function () {
             if (!document.body.contains(campo)) return;
+
+            // O usuário pode ter apagado o texto durante o atraso
+            if (!campoPossuiTexto(campo)) {
+                _camposProcessados.delete(campo);
+                return;
+            }
+
             if (carimboJaExiste(campo)) return;
             inserirCarimbo(campo);
-        }, 250);
+        }, ATRASO_POS_COLAGEM);
     }
 
     function tentarAutoCarimbarCamposExistentes() {
@@ -429,7 +438,7 @@
     }
 
     // ====================
-    // Listener de input: detecta quando o usuario digita no campo
+    // Listener de input: detecta quando o usuário digita no campo
     // para disparar o auto-insert (evita inserir ao abrir chat vazio)
     // ====================
     function iniciarInputListener() {
@@ -439,6 +448,15 @@
 
             var campo = target.closest(CAMPO_SELECTOR);
             if (!campo) return;
+
+            // Colagem/arrastar substituindo o conteúdo pode ter removido o carimbo:
+            // libera o campo para ser recarimbado (o evento paste em si é interceptado
+            // pelo Lexical e não chega até nós, mas o input gerado por ele chega).
+            // A verificação carimboJaExiste em tentarAutoCarimbar continua evitando
+            // duplicar o carimbo quando ele ainda está presente no texto
+            if (event.inputType === 'insertFromPaste' || event.inputType === 'insertFromDrop') {
+                _camposProcessados.delete(campo);
+            }
 
             if (!campoPossuiTexto(campo)) {
                 _camposProcessados.delete(campo);

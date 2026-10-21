@@ -5,14 +5,17 @@
     let listening = false;
     let saveTimeout = null;
 
-    // Estado de formatacao: persiste independente do texto
+    // Evita salvar estado vazio sobre a config salva antes do loadConfig terminar
+    let configCarregada = false;
+
+    // Estado de formatação: persiste independente do texto
     // Array com formatos ativos (ex: [{ marker: '*', fmt: 'bold' }, { marker: '_', fmt: 'italic' }])
-    // 'mono' e sempre ativo por padrao (nao tem botao na toolbar)
+    // 'mono' é sempre ativo por padrão (não tem botão na toolbar)
     let currentFormats = [{ marker: '`', fmt: 'mono' }];
 
     // Ordem de aninhamento dos marcadores (do mais externo para o mais interno)
     const FMT_NESTING_ORDER = ['bold', 'italic', 'strikethrough', 'mono'];
-    let autoSignEnabled = false;
+    let autoSignEnabled = true;
     let showDateInSignature = false;
     let showTimeInSignature = false;
 
@@ -21,7 +24,7 @@
     let currentShortcut = { key: 'Tab', ctrlKey: false, shiftKey: false, altKey: false, metaKey: false };
 
     // ====================
-    // Converte objeto de atalho para string de exibicao
+    // Converte objeto de atalho para string de exibição
     // ====================
     function shortcutToString(shortcut) {
         if (!shortcut || typeof shortcut === 'string') {
@@ -31,10 +34,12 @@
             return key === ' ' ? 'Space' : key;
         }
         var parts = [];
-        // Ordem padrao de modificadores: Ctrl, Alt, Shift, Meta
+        // Ordem padrão de modificadores: Ctrl, Alt, Shift, Meta
         if (shortcut.ctrlKey || shortcut.metaKey) {
-            // No macOS Meta (Cmd) e mais comum, no Windows/Linux Ctrl
-            var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            // No macOS Meta (Cmd) é mais comum, no Windows/Linux Ctrl
+            // navigator.platform é deprecado; usa userAgentData quando disponível
+            var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+            var isMac = platform.toUpperCase().indexOf('MAC') >= 0;
             if (isMac) {
                 if (shortcut.metaKey) parts.push('Cmd');
                 if (shortcut.ctrlKey) parts.push('Ctrl');
@@ -56,7 +61,7 @@
     }
 
     // ====================
-    // Normaliza o valor da tecla para comparacao consistente
+    // Normaliza o valor da tecla para comparação consistente
     // ====================
     function normalizeKey(key) {
         if (!key) return '';
@@ -116,7 +121,7 @@
     };
 
     // ====================
-    // Detecta quais formatacoes estao ativas no texto markdown (recursivo)
+    // Detecta quais formatações estão ativas no texto markdown (recursivo)
     // ====================
     function getFormatsFromMd(text) {
         if (!text) return [];
@@ -144,7 +149,7 @@
     }
 
     // ====================
-    // Reconstroi o texto markdown combinando formatos + texto puro
+    // Reconstrói o texto markdown combinando formatos + texto puro
     // ====================
     function buildMarkdown(plainText) {
         if (!plainText || !plainText.trim()) return '';
@@ -212,7 +217,7 @@
     }
 
     // ====================
-    // Atualiza estado dos botoes de formatacao
+    // Atualiza estado dos botões de formatação
     // ====================
     function updateFmtButtons() {
         fmtButtons.forEach(function(btn) {
@@ -264,23 +269,27 @@
         // Chat bubble preview (markdown renderizado)
         var breakCount = parseInt(breakCountInput.value) || 0;
         var breaks = '<br>'.repeat(breakCount);
+
+        // Com 0 quebras, um espaço separa o carimbo da mensagem (igual ao comportamento no chat)
+        var sufixoEspaco = breakCount === 0 ? ' ' : '';
+
         var simulatedMsg = '<div style="border: none;margin-bottom:6px;font-size:13px;color:#111b21;line-height:1.4;word-break:break-word;position:relative">Bom dia! Segue o relatório solicitado.</div>';
         if (!fullMd) {
             previewChat.innerHTML = simulatedMsg;
         } else {
-            previewChat.innerHTML = renderWppMarkdown(fullMd) + breaks + simulatedMsg;
+            previewChat.innerHTML = renderWppMarkdown(fullMd) + sufixoEspaco + breaks + simulatedMsg;
         }
 
-        // Input field preview (texto cru com marcadores markdown visiveis)
+        // Input field preview (texto cru com marcadores markdown visíveis)
         if (!fullMd.trim()) {
             previewInput.textContent = '';
         } else {
-            previewInput.textContent = fullMd;
+            previewInput.textContent = fullMd + sufixoEspaco;
         }
     }
 
     // ====================
-    // Contador de caracteres (baseado no texto visivel)
+    // Contador de caracteres (baseado no texto visível)
     // ====================
     function updateCharCount() {
         var len = signatureInput.value.length;
@@ -295,7 +304,7 @@
     }
 
     // ====================
-    // Sincroniza o campo oculto a partir do visivel + currentFormat
+    // Sincroniza o campo oculto a partir do visível + currentFormat
     // ====================
     function syncMdFromVisible() {
         var plain = signatureInput.value;
@@ -303,8 +312,8 @@
     }
 
     // ====================
-    // Input visivel: preserva formatacao, rebuilda markdown
-    // (BUG CORRIGIDO: limpar texto NAO remove formatacao)
+    // Input visível: preserva a formatação, reconstrói o markdown
+    // (BUG CORRIGIDO: limpar o texto NÃO remove a formatação)
     // ====================
     signatureInput.addEventListener('input', function() {
         syncMdFromVisible();
@@ -324,7 +333,7 @@
     });
 
     // ====================
-    // Botoes de formatacao (toggle no array de formatos)
+    // Botões de formatação (toggle no array de formatos)
     // ====================
     fmtButtons.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -350,7 +359,7 @@
                 currentFormats.push(def);
             }
 
-            // Reconstroi o campo oculto com os novos formatos
+            // Reconstrói o campo oculto com os novos formatos
             syncMdFromVisible();
 
             signatureInput.focus();
@@ -362,7 +371,7 @@
     });
 
     // ====================
-    // Botoes de data e hora (toggles ON/OFF)
+    // Botões de data e hora (toggles ON/OFF)
     // ====================
     var btnInsertDate = document.getElementById('btn-insert-date');
     var btnInsertTime = document.getElementById('btn-insert-time');
@@ -387,18 +396,24 @@
 
     // ====================
     // Force-save: salva imediatamente no storage (sem debounce)
-    // Chamado ao fechar o popup (pagehide) e em acoes de toggle
+    // Chamado ao fechar o popup (pagehide) e em ações de toggle
     // ====================
     function forceSaveNow() {
+        if (!configCarregada) return;
+
         if (saveTimeout) {
             clearTimeout(saveTimeout);
             saveTimeout = null;
         }
 
-        var breakCount = parseInt(breakCountInput.value, 10) || 2;
+        var breakCount = parseInt(breakCountInput.value, 10);
+        // 0 é um valor válido; só aplica o padrão se o valor for inválido
+        if (isNaN(breakCount) || breakCount < 0) breakCount = 2;
+        if (breakCount > 10) breakCount = 10;
+
         var formatToSave = currentFormats.map(function(f) { return f.fmt; });
 
-        // So salva signature-md se houver conteudo real (sem marcadores)
+        // Só salva signature-md se houver conteúdo real (sem marcadores)
         var plainContent = stripMarkdown(signatureMdInput.value).trim();
         var sigToSave = plainContent ? signatureMdInput.value : '';
 
@@ -496,7 +511,7 @@
             autoSignCheckbox.checked = autoSignEnabled;
             toggleShortcutUI();
 
-            // Restaura toggles de data/hora
+            // Restaura as opções de data/hora
             showDateInSignature = !!result.showDate;
             showTimeInSignature = !!result.showTime;
 
@@ -506,6 +521,8 @@
             updateCharCount();
         }).catch(function(error) {
             console.error('[Popup] Erro ao carregar config:', error);
+        }).finally(function() {
+            configCarregada = true;
         });
     }
 
