@@ -60,9 +60,7 @@ Como o projeto está versionado como código-fonte, a forma mais simples de test
 O projeto usa apenas as permissões necessárias para funcionar:
 
 - `storage`: salva a configuração da assinatura no navegador
-- `activeTab`: permite interagir com a aba atual quando necessário
-- `scripting`: viabiliza a injeção do handler da extensão
-- `https://web.whatsapp.com/*`: restringe a execução ao WhatsApp Web
+- `https://web.whatsapp.com/*`: restringe a execução ao WhatsApp Web e permite carregar o handler na página por meio dos recursos acessíveis da web
 
 ## Privacidade
 
